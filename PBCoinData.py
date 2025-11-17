@@ -638,19 +638,27 @@ class CoinData:
         now_ts = datetime.now().timestamp()
         if self.update_symbols_ts < now_ts - 3600*24:
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Starting symbol update for {len(self.exchanges)} exchanges...')
+            success_count = 0
+            error_count = 0
             for idx, exchange in enumerate(self.exchanges, 1):
                 print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} [{idx}/{len(self.exchanges)}] Fetching symbols from {exchange}...')
                 exc = Exchange(exchange)
                 try:
                     exc.fetch_symbols()
                     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} [{idx}/{len(self.exchanges)}] Successfully fetched and saved symbols for {exchange}')
+                    success_count += 1
+                except UnicodeEncodeError as e:
+                    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} [{idx}/{len(self.exchanges)}] Error: UnicodeEncodeError while processing {exchange}')
+                    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} [{idx}/{len(self.exchanges)}] Error details: {str(e)}')
+                    error_count += 1
                 except Exception as e:
                     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} [{idx}/{len(self.exchanges)}] Error: Failed to fetch symbols for {exchange}: {type(e).__name__}: {str(e)}')
+                    error_count += 1
             self.update_symbols_ts = now_ts
             self._symbols = []
             self._symbols_cpt = []
             self._symbols_all = []
-            print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Symbol update completed for all exchanges')
+            print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Symbol update completed: {success_count} successful, {error_count} failed out of {len(self.exchanges)} exchanges')
 
     def load_symbols(self):
         pb_config = configparser.ConfigParser()
