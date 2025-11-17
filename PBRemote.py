@@ -1122,7 +1122,7 @@ class PBRemote():
         if not pb_config.has_section("pbremote"):
             pb_config.add_section("pbremote")
         pb_config.set("pbremote", "bucket", self.bucket)
-        with open('pbgui.ini', 'w') as configfile:
+        with open('pbgui.ini', 'w', encoding='utf-8') as configfile:
             pb_config.write(configfile)
 
     def is_rclone_installed(self):
