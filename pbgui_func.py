@@ -13,19 +13,152 @@ from Log import LogHandler
 from PBRemote import PBRemote
 from MonitorConfig import MonitorConfig
 
-@st.dialog("Select file")
+def open_native_file_dialog(initial_dir=".", title="Select File", filetypes=None):
+    """
+    Open a native file dialog using tkinter.
+    Returns the selected file path or None if cancelled.
+    """
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+
+        # Create a hidden root window
+        root = tk.Tk()
+        root.withdraw()
+        root.wm_attributes('-topmost', 1)
+
+        # Open file dialog
+        if filetypes is None:
+            filetypes = [("All files", "*.*")]
+
+        file_path = filedialog.askopenfilename(
+            parent=root,
+            initialdir=initial_dir,
+            title=title,
+            filetypes=filetypes
+        )
+
+        root.destroy()
+        return file_path if file_path else None
+
+    except Exception as e:
+        st.error(f"Could not open native file dialog: {e}")
+        return None
+
+def open_native_folder_dialog(initial_dir=".", title="Select Folder"):
+    """
+    Open a native folder dialog using tkinter.
+    Returns the selected folder path or None if cancelled.
+    """
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+
+        # Create a hidden root window
+        root = tk.Tk()
+        root.withdraw()
+        root.wm_attributes('-topmost', 1)
+
+        # Open folder dialog
+        folder_path = filedialog.askdirectory(
+            parent=root,
+            initialdir=initial_dir,
+            title=title
+        )
+
+        root.destroy()
+        return folder_path if folder_path else None
+
+    except Exception as e:
+        st.error(f"Could not open native folder dialog: {e}")
+        return None
+
+@st.dialog("Select Path", width="large")
 def change_ini(section, parameter):
-    filename = st_file_selector(st, path=st.session_state[parameter], key = f'file_change_{parameter}', label = f'select {parameter}')
+    """
+    Opens a native file/folder selector dialog based on the parameter type.
+    Directory parameters (pbdir, pb7dir) -> folder selector
+    File parameters (pbvenv, pb7venv) -> file selector
+    """
+    st.write(f"Click the button below to open the native file/folder selector for **{parameter}**")
+
+    # Determine initial directory
+    initial_path = st.session_state.get(parameter, ".")
+    if initial_path and os.path.exists(initial_path):
+        if os.path.isfile(initial_path):
+            initial_dir = os.path.dirname(initial_path)
+        else:
+            initial_dir = initial_path
+    else:
+        initial_dir = os.getcwd()
+
+    # Determine if we need folder or file selector
+    is_directory = parameter.endswith('dir')
+    is_venv = 'venv' in parameter
+
     col1, col2 = st.columns([1,1])
+
     with col1:
-        if st.button(":green[Yes]"):
-            filename = os.path.abspath(filename)
-            st.session_state[parameter] = filename
-            save_ini(section, parameter, filename)
-            st.rerun()
+        if st.button("🗂️ Open File/Folder Browser", use_container_width=True):
+            if is_directory:
+                # Open folder dialog for directory parameters
+                selected_path = open_native_folder_dialog(
+                    initial_dir=initial_dir,
+                    title=f"Select {parameter.upper()} Directory"
+                )
+            elif is_venv:
+                # Open file dialog for venv parameters (Python executables)
+                selected_path = open_native_file_dialog(
+                    initial_dir=initial_dir,
+                    title=f"Select {parameter.upper()} Python Interpreter",
+                    filetypes=[
+                        ("Python Executable", "python*"),
+                        ("Executable Files", "*.exe"),
+                        ("All files", "*.*")
+                    ]
+                )
+            else:
+                # Default to file dialog
+                selected_path = open_native_file_dialog(
+                    initial_dir=initial_dir,
+                    title=f"Select {parameter}"
+                )
+
+            if selected_path:
+                selected_path = os.path.abspath(selected_path)
+                st.session_state[parameter] = selected_path
+                st.session_state[f'input_{parameter}'] = selected_path
+                save_ini(section, parameter, selected_path)
+                st.success(f"✅ Selected: {selected_path}")
+                sleep(1)
+                st.rerun()
+            else:
+                st.info("Selection cancelled")
+
     with col2:
-        if st.button(":red[No]"):
+        if st.button("❌ Cancel", use_container_width=True):
             st.rerun()
+
+    # Fallback: Show current path and manual input option
+    st.markdown("---")
+    st.write("**Current path:**")
+    st.code(st.session_state.get(parameter, "Not set"), language=None)
+
+    with st.expander("📝 Or enter path manually"):
+        manual_path = st.text_input(
+            "Enter path manually",
+            value=st.session_state.get(parameter, ""),
+            key=f'manual_{parameter}'
+        )
+        if st.button("💾 Save Manual Path"):
+            if manual_path:
+                manual_path = os.path.abspath(manual_path)
+                st.session_state[parameter] = manual_path
+                st.session_state[f'input_{parameter}'] = manual_path
+                save_ini(section, parameter, manual_path)
+                st.success(f"✅ Saved: {manual_path}")
+                sleep(1)
+                st.rerun()
 
 @st.dialog("Select file")
 def select_file(parameter):
