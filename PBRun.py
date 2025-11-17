@@ -1666,8 +1666,8 @@ def main():
     if not dest.exists():
         dest.mkdir(parents=True)
     logfile = Path(f'{str(dest)}/PBRun.log')
-    sys.stdout = TextIOWrapper(open(logfile,"ab",0), write_through=True)
-    sys.stderr = TextIOWrapper(open(logfile,"ab",0), write_through=True)
+    sys.stdout = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
+    sys.stderr = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Start: PBRun')
     run = PBRun()
     if run.is_running():
@@ -1687,8 +1687,8 @@ def main():
             if logfile.exists():
                 if logfile.stat().st_size >= 1048576:
                     logfile.replace(f'{str(logfile)}.old')
-                    sys.stdout = TextIOWrapper(open(logfile,"ab",0), write_through=True)
-                    sys.stderr = TextIOWrapper(open(logfile,"ab",0), write_through=True)
+                    sys.stdout = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
+                    sys.stderr = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
             run.watch_memory()
             run.has_activate()
             run.has_update_status()
