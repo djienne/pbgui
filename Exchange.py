@@ -287,7 +287,7 @@ class Exchange:
         if not dest.exists():
             dest.mkdir(parents=True)
         file = Path(f"{PBGDIR}/data/logs/income_other_{exchange}.json")
-        with open(file, 'a') as f:
+        with open(file, 'a', encoding='utf-8') as f:
             json.dump(history, f, indent=4)
 
     def fetch_history(self, since: int = None):

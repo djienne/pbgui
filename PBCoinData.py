@@ -285,13 +285,13 @@ class CoinData:
 
     def load_pid(self):
         if self.pidfile.exists():
-            with open(self.pidfile) as f:
+            with open(self.pidfile, 'r', encoding='utf-8') as f:
                 pid = f.read()
                 self.my_pid = int(pid) if pid.isnumeric() else None
 
     def save_pid(self):
         self.my_pid = os.getpid()
-        with open(self.pidfile, 'w') as f:
+        with open(self.pidfile, 'w', encoding='utf-8') as f:
             f.write(str(self.my_pid))
 
     def has_new_config(self):
@@ -528,7 +528,7 @@ class CoinData:
         coin_path = f'{pbgdir}/data/coindata'
         if not Path(coin_path).exists():
             Path(coin_path).mkdir(parents=True)
-        with Path(f'{coin_path}/metadata.json').open('w') as f:
+        with Path(f'{coin_path}/metadata.json').open('w', encoding='utf-8') as f:
             json.dump(self.metadata, f)
 
     def save_data(self):
@@ -538,7 +538,7 @@ class CoinData:
         coin_path = f'{pbgdir}/data/coindata'
         if not Path(coin_path).exists():
             Path(coin_path).mkdir(parents=True)
-        with Path(f'{coin_path}/coindata.json').open('w') as f:
+        with Path(f'{coin_path}/coindata.json').open('w', encoding='utf-8') as f:
             json.dump(self.data, f)
     
     def load_data(self):
@@ -572,7 +572,7 @@ class CoinData:
         if not self.data or loadfromfile:
             if Path(f'{coin_path}/coindata.json').exists():
                 try:
-                    with Path(f'{coin_path}/coindata.json').open() as f:
+                    with Path(f'{coin_path}/coindata.json').open('r', encoding='utf-8') as f:
                         self.data = json.load(f)
                         self.data_ts = data_ts
                         return
@@ -607,7 +607,7 @@ class CoinData:
         # Load existing metadata from file if we don't have it in memory
         if not self.metadata and Path(f'{coin_path}/metadata.json').exists():
             try:
-                with Path(f'{coin_path}/metadata.json').open() as f:
+                with Path(f'{coin_path}/metadata.json').open('r', encoding='utf-8') as f:
                     self.metadata = json.load(f)
                     self.metadata_ts = metadata_ts
                     return
