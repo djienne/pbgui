@@ -16,9 +16,9 @@ from pathlib import Path, PurePath
 def change_password():
     with st.expander("Change Password"):
         with st.form("change_password_form"):
-            current_password = st.text_input("Current Password", type="password", placeholder="Enter current password", help=pbgui_help.change_password)
-            new_password = st.text_input("New Password", type="password", placeholder="Enter new password", help=pbgui_help.change_password)
-            confirm_password = st.text_input("Confirm New Password", type="password", placeholder="Re-enter new password", help=pbgui_help.change_password)
+            current_password = st.text_input("Current Password", type="password", placeholder="Enter current password", autocomplete="current-password", help=pbgui_help.change_password)
+            new_password = st.text_input("New Password", type="password", placeholder="Enter new password", autocomplete="new-password", help=pbgui_help.change_password)
+            confirm_password = st.text_input("Confirm New Password", type="password", placeholder="Re-enter new password", autocomplete="new-password", help=pbgui_help.change_password)
             submit_button = st.form_submit_button("Update Password", help=pbgui_help.change_password)
 
         if submit_button:
