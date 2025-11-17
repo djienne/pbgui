@@ -956,6 +956,8 @@ class Exchange:
                             self.cpt.append(v["id"])
                         self.swap.append(v["id"])
                 elif self.id == "binance":
+                    # Only include USDT-margined futures (linear perpetuals)
+                    # USDC pairs are spot markets and excluded by swap filter
                     if v["id"].endswith('USDT'):
                         # print(v)
                         self.swap.append(v["id"])
@@ -969,7 +971,12 @@ class Exchange:
             if v["spot"] and v["active"] and (self.id == "bybit" or self.id == "binance"):
                 self.spot.append(v["id"])
         if self.id in ["bitget", "binance"]:
-            self.cpt = self.fetch_copytrading_symbols()
+            try:
+                cpt_result = self.fetch_copytrading_symbols()
+                if cpt_result:
+                    self.cpt = cpt_result
+            except Exception as e:
+                print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Warning: Could not fetch copytrading symbols for {self.id}: {type(e).__name__}: {str(e)}')
         self.spot.sort()
         self.swap.sort()
         if self.cpt:
