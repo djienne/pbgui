@@ -342,7 +342,7 @@ class BacktestQueue:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("backtest", "cpu", str(self._cpu))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
 
     @property
@@ -355,7 +355,7 @@ class BacktestQueue:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("backtest", "autostart", str(self._autostart))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
         if self._autostart:
             self.run()
@@ -537,7 +537,7 @@ class BacktestResults:
         if not pb_config.has_section("backtest"):
             pb_config.add_section("backtest")
         pb_config.set("backtest", "view_col", f'{self.view_col}')
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
 
     def setup_table(self):

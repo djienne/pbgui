@@ -157,7 +157,7 @@ class OptimizeMultiQueue:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("optimize_multi", "autostart", str(self._autostart))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
         if self._autostart:
             self.run()

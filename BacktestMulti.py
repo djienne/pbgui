@@ -178,7 +178,7 @@ class BacktestMultiQueue:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("backtest_multi", "cpu", str(self._cpu))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
 
     @property
@@ -191,7 +191,7 @@ class BacktestMultiQueue:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("backtest_multi", "autostart", str(self._autostart))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
         if self._autostart:
             self.run()
