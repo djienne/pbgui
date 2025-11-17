@@ -1400,7 +1400,7 @@ class PBRun():
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("main", "activate_v7_ts", str(self.activate_v7_ts))
-        with open('pbgui.ini', 'w') as pbgui_configfile:
+        with open('pbgui.ini', 'w', encoding='utf-8') as pbgui_configfile:
             pb_config.write(pbgui_configfile)
 
     def update_activate(self):
@@ -1409,7 +1409,7 @@ class PBRun():
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("main", "activate_ts", str(self.activate_ts))
-        with open('pbgui.ini', 'w') as pbgui_configfile:
+        with open('pbgui.ini', 'w', encoding='utf-8') as pbgui_configfile:
             pb_config.write(pbgui_configfile)
 
     def update_activate_single(self):
@@ -1418,7 +1418,7 @@ class PBRun():
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("main", "activate_single_ts", str(self.activate_single_ts))
-        with open('pbgui.ini', 'w') as pbgui_configfile:
+        with open('pbgui.ini', 'w', encoding='utf-8') as pbgui_configfile:
             pb_config.write(pbgui_configfile)
 
     def watch_v7(self, v7_instances : list = None):
