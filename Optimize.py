@@ -453,7 +453,7 @@ class OptimizeQueue:
             pb_config.set("optimize", "backtest_drawdown", "0")
         if not pb_config.has_option("optimize", "backtest_stuck"):
             pb_config.set("optimize", "backtest_stuck", "0")
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
         self.load_options()
         self.pbgdir = Path.cwd()
@@ -536,7 +536,7 @@ class OptimizeQueue:
         pb_config.set("optimize", "backtest_adg", str(self._backtest_adg))
         pb_config.set("optimize", "backtest_drawdown", str(self._backtest_drawdown))
         pb_config.set("optimize", "backtest_stuck", str(self._backtest_stuck))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
 
     def is_running(self):

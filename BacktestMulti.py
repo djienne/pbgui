@@ -156,7 +156,7 @@ class BacktestMultiQueue:
             pb_config.set("backtest_multi", "cpu", "1")
         # Write back if we added any options
         if not pb_config.has_option("backtest_multi", "autostart") or not pb_config.has_option("backtest_multi", "cpu"):
-            with open('pbgui.ini', 'w') as f:
+            with open('pbgui.ini', 'w', encoding='utf-8') as f:
                 pb_config.write(f)
         self._autostart = eval(pb_config.get("backtest_multi", "autostart", fallback="False"))
         self._cpu = int(pb_config.get("backtest_multi", "cpu", fallback="1"))

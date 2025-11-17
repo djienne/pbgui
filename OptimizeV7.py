@@ -187,7 +187,7 @@ class OptimizeV7Queue:
         # Ensure option exists with default
         if not pb_config.has_option("optimize_v7", "autostart"):
             pb_config.set("optimize_v7", "autostart", "False")
-            with open('pbgui.ini', 'w') as f:
+            with open('pbgui.ini', 'w', encoding='utf-8') as f:
                 pb_config.write(f)
         self._autostart = eval(pb_config.get("optimize_v7", "autostart", fallback="False"))
         self.load_sort_queue()
@@ -204,7 +204,7 @@ class OptimizeV7Queue:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("optimize_v7", "autostart", str(self._autostart))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
         if self._autostart:
             self.run()
@@ -421,7 +421,7 @@ class OptimizeV7Queue:
             pb_config.add_section("optimize_v7")
         pb_config.set("optimize_v7", "sort_queue", str(self.sort))
         pb_config.set("optimize_v7", "sort_queue_order", str(self.sort_order))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
 
 class OptimizeV7Results:
@@ -556,7 +556,7 @@ class OptimizeV7Results:
             pb_config.add_section("optimize_v7")
         pb_config.set("optimize_v7", "sort_results", str(self.sort_results))
         pb_config.set("optimize_v7", "sort_results_order", str(self.sort_results_order))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
 
     def run_3d_plot(self, index):
@@ -2808,7 +2808,7 @@ class OptimizesV7:
             pb_config.add_section("optimize_v7")
         pb_config.set("optimize_v7", "sort", str(self.sort))
         pb_config.set("optimize_v7", "sort_order", str(self.sort_order))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
 
     def find_optimizes(self):

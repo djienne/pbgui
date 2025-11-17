@@ -198,7 +198,7 @@ class BacktestV7Queue:
             pb_config.set("backtest_v7", "cpu", "1")
         # Write back if we added any options
         if not pb_config.has_option("backtest_v7", "autostart") or not pb_config.has_option("backtest_v7", "cpu"):
-            with open('pbgui.ini', 'w') as f:
+            with open('pbgui.ini', 'w', encoding='utf-8') as f:
                 pb_config.write(f)
         self._autostart = eval(pb_config.get("backtest_v7", "autostart", fallback="False"))
         self._cpu = int(pb_config.get("backtest_v7", "cpu", fallback="1"))
@@ -222,7 +222,7 @@ class BacktestV7Queue:
         if not pb_config.has_section("backtest_v7"):
             pb_config.add_section("backtest_v7")
         pb_config.set("backtest_v7", "cpu", str(self._cpu))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
 
     @property
@@ -237,7 +237,7 @@ class BacktestV7Queue:
         if not pb_config.has_section("backtest_v7"):
             pb_config.add_section("backtest_v7")
         pb_config.set("backtest_v7", "autostart", str(self._autostart))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
         if self._autostart:
             self.run()
@@ -455,7 +455,7 @@ class BacktestV7Queue:
             pb_config.add_section("backtest_v7")
         pb_config.set("backtest_v7", "sort_queue", str(self.sort))
         pb_config.set("backtest_v7", "sort_queue_order", str(self.sort_order))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
 
 class BacktestV7Item:
@@ -1762,7 +1762,7 @@ class BacktestV7Results:
             pb_config.add_section("backtest_v7")
         pb_config.set("backtest_v7", "sort_results", str(self.sort_results))
         pb_config.set("backtest_v7", "sort_results_order", str(self.sort_results_order))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
 
     def add_to_compare(self):
@@ -2055,7 +2055,7 @@ class BacktestsV7:
             pb_config.add_section("backtest_v7")
         pb_config.set("backtest_v7", "sort", str(self.sort))
         pb_config.set("backtest_v7", "sort_order", str(self.sort_order))
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
 
     def find_backtests(self):

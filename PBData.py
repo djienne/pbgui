@@ -109,7 +109,7 @@ class PBData():
         if not pb_config.has_section("pbdata"):
             pb_config.add_section("pbdata")
         pb_config.set("pbdata", "fetch_users", f'{self.fetch_users}')
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
 
     # def update_db(self):

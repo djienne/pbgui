@@ -320,7 +320,7 @@ class BacktestQueue:
             pb_config.add_section("backtest")
             pb_config.set("backtest", "autostart", "False")
             pb_config.set("backtest", "cpu", "1")
-            with open('pbgui.ini', 'w') as f:
+            with open('pbgui.ini', 'w', encoding='utf-8') as f:
                 pb_config.write(f)
         self._autostart = eval(pb_config.get("backtest", "autostart"))
         self._cpu = int(pb_config.get("backtest", "cpu"))

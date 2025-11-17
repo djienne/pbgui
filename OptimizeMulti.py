@@ -141,7 +141,7 @@ class OptimizeMultiQueue:
         # Ensure option exists with default
         if not pb_config.has_option("optimize_multi", "autostart"):
             pb_config.set("optimize_multi", "autostart", "False")
-            with open('pbgui.ini', 'w') as f:
+            with open('pbgui.ini', 'w', encoding='utf-8') as f:
                 pb_config.write(f)
         self._autostart = eval(pb_config.get("optimize_multi", "autostart", fallback="False"))
         if self._autostart:
