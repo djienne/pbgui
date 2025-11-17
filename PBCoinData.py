@@ -548,8 +548,13 @@ class CoinData:
         if Path(f'{coin_path}/coindata.json').exists():
             data_ts = Path(f'{coin_path}/coindata.json').stat().st_mtime
         now_ts = datetime.now().timestamp()
+        # Calculate time until next fetch
+        time_since_last_fetch = now_ts - data_ts
+        hours_until_next = self.fetch_interval - (time_since_last_fetch / 3600)
+
         # Only fetch if data is stale (respecting fetch_interval)
         if data_ts < now_ts - 3600*self.fetch_interval:
+            print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Coin data is stale (last fetch: {int(time_since_last_fetch/3600)} hours ago), fetching fresh data...')
             success = self.fetch_data()
             if success:
                 self.save_data()
@@ -559,6 +564,10 @@ class CoinData:
                 loadfromfile = True
         else:
             loadfromfile = True
+            # Log when data is still fresh (but only occasionally to avoid spam)
+            if int(time_since_last_fetch) % 3600 < 120:  # Log roughly once per hour
+                print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Coin data is fresh. Next fetch in {hours_until_next:.1f} hours.')
+
         # Load existing data from file if needed
         if not self.data or loadfromfile:
             if Path(f'{coin_path}/coindata.json').exists():
@@ -568,7 +577,7 @@ class CoinData:
                         self.data_ts = data_ts
                         return
                 except Exception as e:
-                    print(f'Error loading coindata: {e}. Will retry on next interval.')
+                    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error loading coindata: {e}. Will retry on next interval.')
             else:
                 print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Warning: No cached coindata found. Need successful API fetch first.')
     
@@ -579,12 +588,22 @@ class CoinData:
         if Path(f'{coin_path}/metadata.json').exists():
             metadata_ts = Path(f'{coin_path}/metadata.json').stat().st_mtime
         now_ts = datetime.now().timestamp()
+        # Calculate time until next fetch
+        time_since_last_fetch = now_ts - metadata_ts
+        days_until_next = self.metadata_interval - (time_since_last_fetch / (3600*24))
+
         # Only fetch if metadata is stale (respecting metadata_interval)
         if metadata_ts < now_ts - 3600*24*self.metadata_interval:
+            print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Metadata is stale (last fetch: {int(time_since_last_fetch/(3600*24))} days ago), fetching fresh metadata...')
             success = self.fetch_metadata()
             if success:
                 self.save_metadata()
             # Don't retry immediately even if fetch failed - respect the interval
+        else:
+            # Log when metadata is still fresh (but only occasionally to avoid spam)
+            if int(time_since_last_fetch) % (3600*24) < 120:  # Log roughly once per day
+                print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Metadata is fresh. Next fetch in {days_until_next:.1f} days.')
+
         # Load existing metadata from file if we don't have it in memory
         if not self.metadata and Path(f'{coin_path}/metadata.json').exists():
             try:
@@ -593,7 +612,7 @@ class CoinData:
                     self.metadata_ts = metadata_ts
                     return
             except Exception as e:
-                print(f'Error loading metadata: {e}. Will retry on next interval.')
+                print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error loading metadata: {e}. Will retry on next interval.')
 
     def is_data_fresh(self):
         pbgdir = Path.cwd()
@@ -618,17 +637,20 @@ class CoinData:
     def update_symbols(self):
         now_ts = datetime.now().timestamp()
         if self.update_symbols_ts < now_ts - 3600*24:
-            for exchange in self.exchanges:
+            print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Starting symbol update for {len(self.exchanges)} exchanges...')
+            for idx, exchange in enumerate(self.exchanges, 1):
+                print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} [{idx}/{len(self.exchanges)}] Fetching symbols from {exchange}...')
                 exc = Exchange(exchange)
                 try:
                     exc.fetch_symbols()
-                    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Update Symbols {exchange}')
+                    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} [{idx}/{len(self.exchanges)}] Successfully fetched and saved symbols for {exchange}')
                 except Exception as e:
-                    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: Failed to fetch symbols for {exchange}: {type(e).__name__}: {str(e)}')
+                    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} [{idx}/{len(self.exchanges)}] Error: Failed to fetch symbols for {exchange}: {type(e).__name__}: {str(e)}')
             self.update_symbols_ts = now_ts
             self._symbols = []
             self._symbols_cpt = []
             self._symbols_all = []
+            print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Symbol update completed for all exchanges')
 
     def load_symbols(self):
         pb_config = configparser.ConfigParser()
@@ -802,21 +824,38 @@ def main():
         print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: PBCoinData already started')
         exit(1)
     pbcoindata.save_pid()
+    iteration = 0
     while True:
         try:
+            iteration += 1
             if logfile.exists():
                 if logfile.stat().st_size >= 10485760:
                     logfile.replace(f'{str(logfile)}.old')
                     sys.stdout = TextIOWrapper(open(logfile,"ab",0), write_through=True)
                     sys.stderr = TextIOWrapper(open(logfile,"ab",0), write_through=True)
+
+            # Log service heartbeat every 10 iterations (10 minutes)
+            if iteration % 10 == 1:
+                print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} PBCoinData service running (iteration {iteration})')
+
+            # Update symbols from exchanges (only runs if 24h elapsed)
             pbcoindata.update_symbols()
+
+            # Load/fetch coin data from CoinMarketCap (only runs if fetch_interval elapsed)
             pbcoindata.load_data()
+
+            # Load/fetch metadata from CoinMarketCap (only runs if metadata_interval elapsed)
             pbcoindata.load_metadata()
+
+            # Sleep before next iteration
             sleep(60)
+
+            # Reload config to pick up any changes
             pbcoindata.load_config()
         except Exception as e:
-            print(f'Something went wrong, but continue {e}')
+            print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error in main loop: {e}')
             traceback.print_exc()
+            sleep(60)
 
 if __name__ == '__main__':
     main()
