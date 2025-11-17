@@ -285,13 +285,13 @@ class CoinData:
 
     def load_pid(self):
         if self.pidfile.exists():
-            with open(self.pidfile) as f:
+            with open(self.pidfile, 'r', encoding='utf-8') as f:
                 pid = f.read()
                 self.my_pid = int(pid) if pid.isnumeric() else None
 
     def save_pid(self):
         self.my_pid = os.getpid()
-        with open(self.pidfile, 'w') as f:
+        with open(self.pidfile, 'w', encoding='utf-8') as f:
             f.write(str(self.my_pid))
 
     def has_new_config(self):
@@ -528,7 +528,7 @@ class CoinData:
         coin_path = f'{pbgdir}/data/coindata'
         if not Path(coin_path).exists():
             Path(coin_path).mkdir(parents=True)
-        with Path(f'{coin_path}/metadata.json').open('w') as f:
+        with Path(f'{coin_path}/metadata.json').open('w', encoding='utf-8') as f:
             json.dump(self.metadata, f)
 
     def save_data(self):
@@ -538,7 +538,7 @@ class CoinData:
         coin_path = f'{pbgdir}/data/coindata'
         if not Path(coin_path).exists():
             Path(coin_path).mkdir(parents=True)
-        with Path(f'{coin_path}/coindata.json').open('w') as f:
+        with Path(f'{coin_path}/coindata.json').open('w', encoding='utf-8') as f:
             json.dump(self.data, f)
     
     def load_data(self):
@@ -572,7 +572,7 @@ class CoinData:
         if not self.data or loadfromfile:
             if Path(f'{coin_path}/coindata.json').exists():
                 try:
-                    with Path(f'{coin_path}/coindata.json').open() as f:
+                    with Path(f'{coin_path}/coindata.json').open('r', encoding='utf-8') as f:
                         self.data = json.load(f)
                         self.data_ts = data_ts
                         return
@@ -607,7 +607,7 @@ class CoinData:
         # Load existing metadata from file if we don't have it in memory
         if not self.metadata and Path(f'{coin_path}/metadata.json').exists():
             try:
-                with Path(f'{coin_path}/metadata.json').open() as f:
+                with Path(f'{coin_path}/metadata.json').open('r', encoding='utf-8') as f:
                     self.metadata = json.load(f)
                     self.metadata_ts = metadata_ts
                     return
@@ -638,19 +638,27 @@ class CoinData:
         now_ts = datetime.now().timestamp()
         if self.update_symbols_ts < now_ts - 3600*24:
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Starting symbol update for {len(self.exchanges)} exchanges...')
+            success_count = 0
+            error_count = 0
             for idx, exchange in enumerate(self.exchanges, 1):
                 print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} [{idx}/{len(self.exchanges)}] Fetching symbols from {exchange}...')
                 exc = Exchange(exchange)
                 try:
                     exc.fetch_symbols()
                     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} [{idx}/{len(self.exchanges)}] Successfully fetched and saved symbols for {exchange}')
+                    success_count += 1
+                except UnicodeEncodeError as e:
+                    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} [{idx}/{len(self.exchanges)}] Error: UnicodeEncodeError while processing {exchange}')
+                    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} [{idx}/{len(self.exchanges)}] Error details: {str(e)}')
+                    error_count += 1
                 except Exception as e:
                     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} [{idx}/{len(self.exchanges)}] Error: Failed to fetch symbols for {exchange}: {type(e).__name__}: {str(e)}')
+                    error_count += 1
             self.update_symbols_ts = now_ts
             self._symbols = []
             self._symbols_cpt = []
             self._symbols_all = []
-            print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Symbol update completed for all exchanges')
+            print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Symbol update completed: {success_count} successful, {error_count} failed out of {len(self.exchanges)} exchanges')
 
     def load_symbols(self):
         pb_config = configparser.ConfigParser()

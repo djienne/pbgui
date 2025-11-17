@@ -287,7 +287,7 @@ class Exchange:
         if not dest.exists():
             dest.mkdir(parents=True)
         file = Path(f"{PBGDIR}/data/logs/income_other_{exchange}.json")
-        with open(file, 'a') as f:
+        with open(file, 'a', encoding='utf-8') as f:
             json.dump(history, f, indent=4)
 
     def fetch_history(self, since: int = None):
@@ -930,8 +930,11 @@ class Exchange:
         return cpSymbols
 
     def fetch_symbols(self):
+        print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: [{self.id}] Connecting to exchange...')
         if not self.instance: self.connect()
+        print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: [{self.id}] Loading markets from exchange...')
         self._markets = self.instance.load_markets()
+        print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: [{self.id}] Loaded {len(self._markets)} markets')
         self.swap = []
         self.spot = []
         self.cpt = []
@@ -981,12 +984,14 @@ class Exchange:
         self.swap.sort()
         if self.cpt:
             self.cpt.sort()
+        print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: [{self.id}] Found {len(self.swap)} swap symbols, {len(self.spot)} spot symbols, {len(self.cpt)} copy-trading symbols')
         # print(self.spot)
         # print(self.swap)
         # print(self.cpt)
         self.save_symbols()
 
     def save_symbols(self):
+        print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: [{self.id}] Saving symbols to pbgui.ini...')
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("exchanges"):
@@ -998,6 +1003,7 @@ class Exchange:
             pb_config.set("exchanges", f'{self.id}.cpt', f'{self.cpt}')
         with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
+        print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: [{self.id}] Successfully saved symbols to pbgui.ini')
 
     def load_symbols(self):
         pb_config = configparser.ConfigParser()
