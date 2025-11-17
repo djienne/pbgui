@@ -327,7 +327,7 @@ class CoinData:
     def load_config(self):
         if self.has_new_config():
             pb_config = configparser.ConfigParser()
-            pb_config.read('pbgui.ini')
+            pb_config.read('pbgui.ini', encoding='utf-8')
             if pb_config.has_option("coinmarketcap", "api_key"):
                 self._api_key = pb_config.get("coinmarketcap", "api_key")
             if pb_config.has_option("coinmarketcap", "fetch_limit"):
@@ -339,14 +339,14 @@ class CoinData:
     
     def save_config(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("coinmarketcap"):
             pb_config.add_section("coinmarketcap")
         pb_config.set("coinmarketcap", "api_key", self.api_key)
         pb_config.set("coinmarketcap", "fetch_limit", str(self.fetch_limit))
         pb_config.set("coinmarketcap", "fetch_interval", str(self.fetch_interval))
         pb_config.set("coinmarketcap", "metadata_interval", str(self.metadata_interval))
-        with open('pbgui.ini', 'w') as pbgui_configfile:
+        with open('pbgui.ini', 'w', encoding='utf-8') as pbgui_configfile:
             pb_config.write(pbgui_configfile)
 
     def fetch_api_status(self):
@@ -654,7 +654,7 @@ class CoinData:
 
     def load_symbols(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         exchange = "kucoinfutures" if self.exchange == "kucoin" else self.exchange
         if pb_config.has_option("exchanges", f'{exchange}.swap'):
             self._symbols = eval(pb_config.get("exchanges", f'{exchange}.swap'))
@@ -667,7 +667,7 @@ class CoinData:
     def load_symbols_all(self):
         self._symbols_all = []
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         for exchange in self.exchanges:
             if pb_config.has_option("exchanges", f'{exchange}.swap'):
                 # add symbol from symbols to symbols_all if not already in symbols_all
@@ -814,8 +814,8 @@ def main():
     if not dest.exists():
         dest.mkdir(parents=True)
     logfile = Path(f'{str(dest)}/PBCoinData.log')
-    sys.stdout = TextIOWrapper(open(logfile,"ab",0), write_through=True)
-    sys.stderr = TextIOWrapper(open(logfile,"ab",0), write_through=True)
+    sys.stdout = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
+    sys.stderr = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Start: PBCoinData')
     pbcoindata = CoinData()
     if pbcoindata.is_running():
@@ -831,8 +831,8 @@ def main():
             if logfile.exists():
                 if logfile.stat().st_size >= 10485760:
                     logfile.replace(f'{str(logfile)}.old')
-                    sys.stdout = TextIOWrapper(open(logfile,"ab",0), write_through=True)
-                    sys.stderr = TextIOWrapper(open(logfile,"ab",0), write_through=True)
+                    sys.stdout = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
+                    sys.stderr = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
 
             # Log service heartbeat every 10 iterations (10 minutes)
             if iteration % 10 == 1:

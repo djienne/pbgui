@@ -988,7 +988,7 @@ class Exchange:
 
     def save_symbols(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("exchanges"):
             pb_config.add_section("exchanges")
         pb_config.set("exchanges", f'{self.id}.swap', f'{self.swap}')
@@ -996,12 +996,12 @@ class Exchange:
             pb_config.set("exchanges", f'{self.id}.spot', f'{self.spot}')
         if self.cpt:
             pb_config.set("exchanges", f'{self.id}.cpt', f'{self.cpt}')
-        with open('pbgui.ini', 'w') as f:
+        with open('pbgui.ini', 'w', encoding='utf-8') as f:
             pb_config.write(f)
 
     def load_symbols(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if pb_config.has_option("exchanges", f'{self.id}.spot'):
             self.spot = eval(pb_config.get("exchanges", f'{self.id}.spot'))
         if pb_config.has_option("exchanges", f'{self.id}.swap'):

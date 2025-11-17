@@ -184,8 +184,8 @@ def main():
     if not dest.exists():
         dest.mkdir(parents=True)
     logfile = Path(f'{str(dest)}/PBData.log')
-    sys.stdout = TextIOWrapper(open(logfile, "ab", 0), write_through=True)
-    sys.stderr = TextIOWrapper(open(logfile, "ab", 0), write_through=True)
+    sys.stdout = TextIOWrapper(open(logfile, "ab", 0), encoding='utf-8', write_through=True)
+    sys.stderr = TextIOWrapper(open(logfile, "ab", 0), encoding='utf-8', write_through=True)
     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Start: PBData')
     pbdata = PBData()
     if pbdata.is_running():
@@ -200,8 +200,8 @@ def main():
             try:
                 if logfile.exists() and logfile.stat().st_size >= 10485760:
                     logfile.replace(f'{str(logfile)}.old')
-                    sys.stdout = TextIOWrapper(open(logfile, "ab", 0), write_through=True)
-                    sys.stderr = TextIOWrapper(open(logfile, "ab", 0), write_through=True)
+                    sys.stdout = TextIOWrapper(open(logfile, "ab", 0), encoding='utf-8', write_through=True)
+                    sys.stderr = TextIOWrapper(open(logfile, "ab", 0), encoding='utf-8', write_through=True)
                 await pbdata.update_db_async()
                 await asyncio.sleep(1)
             except Exception as e:
