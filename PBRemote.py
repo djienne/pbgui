@@ -1076,6 +1076,9 @@ class PBRemote():
         if self.is_running():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: PBRemote')
             psutil.Process(self.my_pid).kill()
+            # Clean up PID file to avoid stale PID issues
+            if self.pidfile.exists():
+                self.pidfile.unlink()
 
     def is_running(self):
         self.load_pid()

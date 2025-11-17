@@ -1624,6 +1624,9 @@ class PBRun():
         if self.is_running():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: PBRun')
             psutil.Process(self.my_pid).kill()
+            # Clean up PID file to avoid stale PID issues
+            if self.pidfile.exists():
+                self.pidfile.unlink()
 
     def restart_pbrun(self):
         if self.is_running():

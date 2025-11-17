@@ -33,17 +33,21 @@ class PBStat(Instances):
                 subprocess.Popen(cmd, stdout=None, stderr=None, cwd=pbgdir, text=True, start_new_session=True)
             count = 0
             while True:
-                if count > 10:
-                    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: Can not start PBStat')
                 sleep(1)
                 if self.is_running():
                     break
                 count += 1
+                if count > 10:
+                    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: Can not start PBStat')
+                    break
 
     def stop(self):
         if self.is_running():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: PBStat')
             psutil.Process(self.my_pid).kill()
+            # Clean up PID file to avoid stale PID issues
+            if self.pidfile.exists():
+                self.pidfile.unlink()
 
     def restart(self):
         if self.is_running():
