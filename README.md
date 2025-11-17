@@ -281,6 +281,18 @@ Open `http://localhost:8501` in your browser.
    - Example path for venv_pb7: `/home/mani/software/venv_pb7/bin/python`
 3. Select "Master" on Welcome Screen if this system is used to send configs to VPS
 
+### Configuration File Safety
+
+PBGui stores your local settings in `pbgui.ini`. This file is automatically created from `pbgui.ini.example` on first run.
+
+**Important notes:**
+- ✅ `pbgui.ini` is **excluded from git** (in `.gitignore`) and will not be affected by `git pull` operations
+- ✅ **Automatic backup**: Every time settings are saved, a backup is created at `pbgui.ini.backup`
+- ✅ **Auto-recovery**: If `pbgui.ini` is corrupted or missing, it will be automatically restored from backup or recreated from the example file
+- ✅ Your local configuration (paths, API keys, bot names) will **never be reset** by git operations or restarts
+
+If you need to reset your configuration to defaults, simply delete `pbgui.ini` and restart PBGui.
+
 ---
 
 ## Services Configuration
