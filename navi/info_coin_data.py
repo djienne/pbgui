@@ -71,13 +71,30 @@ def setup_coindata():
     if "edit_coindata_metadata_interval" in st.session_state:
         if st.session_state.edit_coindata_metadata_interval != coindata.metadata_interval:
             coindata.metadata_interval = st.session_state.edit_coindata_metadata_interval
+
+    # Check service status
+    service_running = coindata.is_running()
+
     # Save button - check AFTER updating values from inputs
     if 'setup_coindata' in st.session_state:
         if st.button(":material/save:", use_container_width=True):
             coindata.save_config()
+
+            # Show service status message
+            if service_running:
+                info_popup("Config saved! PBCoinData service is running and will pick up changes within 60 seconds. Check logs at System → Debug Log for progress.")
+            else:
+                info_popup("Config saved! Note: PBCoinData service is NOT running. Start it at System → Services to begin fetching coin data.")
+
             del st.session_state.setup_coindata
-            info_popup("Config saved successfully! API key will persist across restarts.")
             st.rerun()
+
+    # Show service status banner
+    if not service_running:
+        st.warning("⚠️ PBCoinData service is not running. Symbol lists won't be fetched until you start it at System → Services.", icon="⚠️")
+    else:
+        st.info("✅ PBCoinData service is running. Coin data will be fetched automatically.", icon="✅")
+
     # Edit
     st.text_input("CoinMarketCap API_Key", value=coindata.api_key, type="password", key="edit_coindata_api_key", autocomplete="off", help=pbgui_help.coindata_api_key)
     st.number_input("Fetch Limit", min_value=200, max_value=5000, value=coindata.fetch_limit, step=200, format="%.d", key="edit_coindata_fetch_limit", help=pbgui_help.coindata_fetch_limit)
