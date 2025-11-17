@@ -219,6 +219,8 @@ class BacktestV7Queue:
         self._cpu = new_cpu
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
+        if not pb_config.has_section("backtest_v7"):
+            pb_config.add_section("backtest_v7")
         pb_config.set("backtest_v7", "cpu", str(self._cpu))
         with open('pbgui.ini', 'w') as f:
             pb_config.write(f)
@@ -232,6 +234,8 @@ class BacktestV7Queue:
         self._autostart = new_autostart
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
+        if not pb_config.has_section("backtest_v7"):
+            pb_config.add_section("backtest_v7")
         pb_config.set("backtest_v7", "autostart", str(self._autostart))
         with open('pbgui.ini', 'w') as f:
             pb_config.write(f)
