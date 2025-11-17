@@ -127,7 +127,7 @@ class OptimizeItem(Base):
 
     def load_options(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if pb_config.has_option("optimize", "backtest_best"):
             self.backtest_best = int(pb_config.get("optimize", "backtest_best"))
         if pb_config.has_option("optimize", "backtest_sharp"):
@@ -436,7 +436,7 @@ class OptimizeQueue:
     def __init__(self):
         self.items = []
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("optimize"):
             pb_config.add_section("optimize")
         if not pb_config.has_option("optimize", "cpu"):
@@ -515,7 +515,7 @@ class OptimizeQueue:
 
     def load_options(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         self._cpu = int(pb_config.get("optimize", "cpu"))
         if self._cpu > multiprocessing.cpu_count():
             self.cpu = multiprocessing.cpu_count()
@@ -528,7 +528,7 @@ class OptimizeQueue:
 
     def save_options(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("optimize", "cpu", str(self._cpu))
         pb_config.set("optimize", "mode", str(self._mode))
         pb_config.set("optimize", "backtest_best", str(self._backtest_best))

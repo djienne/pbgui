@@ -188,7 +188,7 @@ class BacktestV7Queue:
         self.sort_order = True
         self.load_sort_queue()
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("backtest_v7"):
             pb_config.add_section("backtest_v7")
         # Ensure options exist with defaults
@@ -208,7 +208,7 @@ class BacktestV7Queue:
     @property
     def cpu(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         self._cpu = int(pb_config.get("backtest_v7", "cpu", fallback="1"))
         if self._cpu > multiprocessing.cpu_count():
             self._cpu = multiprocessing.cpu_count()
@@ -218,7 +218,7 @@ class BacktestV7Queue:
     def cpu(self, new_cpu):
         self._cpu = new_cpu
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("backtest_v7", "cpu", str(self._cpu))
         with open('pbgui.ini', 'w') as f:
             pb_config.write(f)
@@ -231,7 +231,7 @@ class BacktestV7Queue:
     def autostart(self, new_autostart):
         self._autostart = new_autostart
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("backtest_v7", "autostart", str(self._autostart))
         with open('pbgui.ini', 'w') as f:
             pb_config.write(f)
@@ -440,13 +440,13 @@ class BacktestV7Queue:
 
     def load_sort_queue(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         self.sort = pb_config.get("backtest_v7", "sort_queue") if pb_config.has_option("backtest_v7", "sort_queue") else "Time"
         self.sort_order = eval(pb_config.get("backtest_v7", "sort_queue_order")) if pb_config.has_option("backtest_v7", "sort_queue_order") else True
 
     def save_sort_queue(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("backtest_v7"):
             pb_config.add_section("backtest_v7")
         pb_config.set("backtest_v7", "sort_queue", str(self.sort))
@@ -1747,13 +1747,13 @@ class BacktestV7Results:
 
     def load_sort_results(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         self.sort_results = pb_config.get("backtest_v7", "sort_results") if pb_config.has_option("backtest_v7", "sort_results") else "Result Time"
         self.sort_results_order = eval(pb_config.get("backtest_v7", "sort_results_order")) if pb_config.has_option("backtest_v7", "sort_results_order") else True
 
     def save_sort_results(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("backtest_v7"):
             pb_config.add_section("backtest_v7")
         pb_config.set("backtest_v7", "sort_results", str(self.sort_results))
@@ -2040,13 +2040,13 @@ class BacktestsV7:
 
     def load_sort(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         self.sort = pb_config.get("backtest_v7", "sort") if pb_config.has_option("backtest_v7", "sort") else "Time"
         self.sort_order = eval(pb_config.get("backtest_v7", "sort_order")) if pb_config.has_option("backtest_v7", "sort_order") else True
 
     def save_sort(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("backtest_v7"):
             pb_config.add_section("backtest_v7")
         pb_config.set("backtest_v7", "sort", str(self.sort))
@@ -2157,7 +2157,7 @@ def main():
             while bt.downloading():
                 time.sleep(5)
             pb_config = configparser.ConfigParser()
-            pb_config.read('pbgui.ini')
+            pb_config.read('pbgui.ini', encoding='utf-8')
             if not eval(pb_config.get("backtest_v7", "autostart", fallback="False")):
                 return
             if item.status() == "not started":

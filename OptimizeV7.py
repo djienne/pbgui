@@ -181,7 +181,7 @@ class OptimizeV7Queue:
         self.sort = "Time"
         self.sort_order = True
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("optimize_v7"):
             pb_config.add_section("optimize_v7")
         # Ensure option exists with default
@@ -202,7 +202,7 @@ class OptimizeV7Queue:
     def autostart(self, new_autostart):
         self._autostart = new_autostart
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("optimize_v7", "autostart", str(self._autostart))
         with open('pbgui.ini', 'w') as f:
             pb_config.write(f)
@@ -410,13 +410,13 @@ class OptimizeV7Queue:
 
     def load_sort_queue(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         self.sort = pb_config.get("optimize_v7", "sort_queue") if pb_config.has_option("optimize_v7", "sort_queue") else "Time"
         self.sort_order = eval(pb_config.get("optimize_v7", "sort_queue_order")) if pb_config.has_option("optimize_v7", "sort_queue_order") else True
 
     def save_sort_queue(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("optimize_v7"):
             pb_config.add_section("optimize_v7")
         pb_config.set("optimize_v7", "sort_queue", str(self.sort))
@@ -545,13 +545,13 @@ class OptimizeV7Results:
 
     def load_sort_results(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         self.sort_results = pb_config.get("optimize_v7", "sort_results") if pb_config.has_option("optimize_v7", "sort_results") else "Result Time"
         self.sort_results_order = eval(pb_config.get("optimize_v7", "sort_results_order")) if pb_config.has_option("optimize_v7", "sort_results_order") else True
 
     def save_sort_results(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("optimize_v7"):
             pb_config.add_section("optimize_v7")
         pb_config.set("optimize_v7", "sort_results", str(self.sort_results))
@@ -2797,13 +2797,13 @@ class OptimizesV7:
 
     def load_sort(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         self.sort = pb_config.get("optimize_v7", "sort") if pb_config.has_option("optimize_v7", "sort") else "Time"
         self.sort_order = eval(pb_config.get("optimize_v7", "sort_order")) if pb_config.has_option("optimize_v7", "sort_order") else True
 
     def save_sort(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("optimize_v7"):
             pb_config.add_section("optimize_v7")
         pb_config.set("optimize_v7", "sort", str(self.sort))
@@ -2884,7 +2884,7 @@ def main():
             while opt.running():
                 time.sleep(5)
             pb_config = configparser.ConfigParser()
-            pb_config.read('pbgui.ini')
+            pb_config.read('pbgui.ini', encoding='utf-8')
             if not eval(pb_config.get("optimize_v7", "autostart", fallback="False")):
                 return
             if item.is_existing():

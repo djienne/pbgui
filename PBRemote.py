@@ -398,7 +398,7 @@ class PBRemote():
         self.my_pid = None
 
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         # Init pbname
         if pb_config.has_option("main", "pbname"):
             self.name = pb_config.get("main", "pbname")
@@ -1105,7 +1105,7 @@ class PBRemote():
     def load_config(self):
         """Load the bucket name used in the remote storage from pbgui.ini."""
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if pb_config.has_section("pbremote"):
             if pb_config.has_option("pbremote", "bucket"):
                 self.bucket = pb_config.get("pbremote", "bucket")
@@ -1115,7 +1115,7 @@ class PBRemote():
     def save_config(self):
         """Save the bucket name used in the remote storage in pbgui.ini."""
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("pbremote"):
             pb_config.add_section("pbremote")
         pb_config.set("pbremote", "bucket", self.bucket)

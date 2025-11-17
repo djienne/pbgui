@@ -146,7 +146,7 @@ class BacktestMultiQueue:
     def __init__(self):
         self.items = []
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("backtest_multi"):
             pb_config.add_section("backtest_multi")
         # Ensure options exist with defaults
@@ -166,7 +166,7 @@ class BacktestMultiQueue:
     @property
     def cpu(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         self._cpu = int(pb_config.get("backtest_multi", "cpu", fallback="1"))
         if self._cpu > multiprocessing.cpu_count():
             self._cpu = multiprocessing.cpu_count()
@@ -176,7 +176,7 @@ class BacktestMultiQueue:
     def cpu(self, new_cpu):
         self._cpu = new_cpu
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("backtest_multi", "cpu", str(self._cpu))
         with open('pbgui.ini', 'w') as f:
             pb_config.write(f)
@@ -189,7 +189,7 @@ class BacktestMultiQueue:
     def autostart(self, new_autostart):
         self._autostart = new_autostart
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("backtest_multi", "autostart", str(self._autostart))
         with open('pbgui.ini', 'w') as f:
             pb_config.write(f)
@@ -467,7 +467,7 @@ class BacktestMultiItem:
 
     def load_symbols(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if pb_config.has_option("exchanges", f'{self.exchange}.swap'):
             return eval(pb_config.get("exchanges", f'{self.exchange}.swap'))
         else:
@@ -1235,7 +1235,7 @@ def main():
             while bt.downloading():
                 time.sleep(5)
             pb_config = configparser.ConfigParser()
-            pb_config.read('pbgui.ini')
+            pb_config.read('pbgui.ini', encoding='utf-8')
             if not eval(pb_config.get("backtest_multi", "autostart", fallback="False")):
                 return
             if item.status() == "not started":

@@ -1169,7 +1169,7 @@ class OptimizeConfigs:
         self.configs = []
         self.index = 0
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         pbdir = pb_config.get("main", "pbdir")
         self.config_path = f'{pbdir}/configs/optimize'
         self.load()

@@ -819,7 +819,7 @@ class PBRun():
         self.index = 0
         self.pbgdir = Path.cwd()
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         # Init activate_ts and pbname
         if pb_config.has_option("main", "pbname"):
             self.name = pb_config.get("main", "pbname")
@@ -1398,7 +1398,7 @@ class PBRun():
         self.activate_v7_ts = int(datetime.now().timestamp())
         self.instances_status_v7.activate_ts = self.activate_v7_ts
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("main", "activate_v7_ts", str(self.activate_v7_ts))
         with open('pbgui.ini', 'w') as pbgui_configfile:
             pb_config.write(pbgui_configfile)
@@ -1407,7 +1407,7 @@ class PBRun():
         self.activate_ts = int(datetime.now().timestamp())
         self.instances_status.activate_ts = self.activate_ts
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("main", "activate_ts", str(self.activate_ts))
         with open('pbgui.ini', 'w') as pbgui_configfile:
             pb_config.write(pbgui_configfile)
@@ -1416,7 +1416,7 @@ class PBRun():
         self.activate_single_ts = int(datetime.now().timestamp())
         self.instances_status_single.activate_ts = self.activate_single_ts
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("main", "activate_single_ts", str(self.activate_single_ts))
         with open('pbgui.ini', 'w') as pbgui_configfile:
             pb_config.write(pbgui_configfile)
