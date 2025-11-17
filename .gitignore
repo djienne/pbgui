@@ -20,7 +20,10 @@ __pycache__/
 data/
 
 # Configuration files with secrets
+# IMPORTANT: pbgui.ini contains your local configuration and should NEVER be committed
+# Your personal settings (paths, API keys, server names) will be lost if this file is tracked by git
 pbgui.ini
+pbgui.ini.backup
 api-keys.json
 
 # IDE
