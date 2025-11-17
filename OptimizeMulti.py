@@ -135,7 +135,7 @@ class OptimizeMultiQueue:
     def __init__(self):
         self.items = []
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("optimize_multi"):
             pb_config.add_section("optimize_multi")
         # Ensure option exists with default
@@ -155,7 +155,7 @@ class OptimizeMultiQueue:
     def autostart(self, new_autostart):
         self._autostart = new_autostart
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("optimize_multi", "autostart", str(self._autostart))
         with open('pbgui.ini', 'w') as f:
             pb_config.write(f)
@@ -897,7 +897,7 @@ def main():
             while opt.running():
                 time.sleep(5)
             pb_config = configparser.ConfigParser()
-            pb_config.read('pbgui.ini')
+            pb_config.read('pbgui.ini', encoding='utf-8')
             if not eval(pb_config.get("optimize_multi", "autostart", fallback="False")):
                 return
             if item.status() == "not started":

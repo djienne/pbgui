@@ -315,7 +315,7 @@ class BacktestQueue:
     def __init__(self):
         self.items = []
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("backtest"):
             pb_config.add_section("backtest")
             pb_config.set("backtest", "autostart", "False")
@@ -330,7 +330,7 @@ class BacktestQueue:
     @property
     def cpu(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         self._cpu = int(pb_config.get("backtest", "cpu"))
         if self._cpu > multiprocessing.cpu_count():
             self._cpu = multiprocessing.cpu_count()
@@ -340,7 +340,7 @@ class BacktestQueue:
     def cpu(self, new_cpu):
         self._cpu = new_cpu
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("backtest", "cpu", str(self._cpu))
         with open('pbgui.ini', 'w') as f:
             pb_config.write(f)
@@ -353,7 +353,7 @@ class BacktestQueue:
     def autostart(self, new_autostart):
         self._autostart = new_autostart
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         pb_config.set("backtest", "autostart", str(self._autostart))
         with open('pbgui.ini', 'w') as f:
             pb_config.write(f)
@@ -526,14 +526,14 @@ class BacktestResults:
 
     def load_view_col(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if pb_config.has_option("backtest", "view_col"):
             return eval(pb_config.get("backtest", "view_col"))
         return []
 
     def save_view_col(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("backtest"):
             pb_config.add_section("backtest")
         pb_config.set("backtest", "view_col", f'{self.view_col}')
@@ -945,7 +945,7 @@ def main():
             while bt.downloading():
                 time.sleep(5)
             pb_config = configparser.ConfigParser()
-            pb_config.read('pbgui.ini')
+            pb_config.read('pbgui.ini', encoding='utf-8')
             if not eval(pb_config.get("backtest", "autostart")):
                 return
             if item.status() == "not started":

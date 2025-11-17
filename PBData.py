@@ -46,17 +46,21 @@ class PBData():
                 subprocess.Popen(cmd, stdout=None, stderr=None, cwd=PBGDIR, text=True, start_new_session=True)
             count = 0
             while True:
-                if count > 5:
-                    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: Can not start PBData')
                 sleep(1)
                 if self.is_running():
                     break
                 count += 1
+                if count > 5:
+                    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: Can not start PBData')
+                    break
 
     def stop(self):
         if self.is_running():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: PBData')
             psutil.Process(self.my_pid).kill()
+            # Clean up PID file to avoid stale PID issues
+            if self.pidfile.exists():
+                self.pidfile.unlink()
 
     def restart(self):
         if self.is_running():
@@ -86,7 +90,7 @@ class PBData():
     def load_fetch_users(self):
         pb_config = configparser.ConfigParser()
         try:
-            pb_config.read('pbgui.ini')
+            pb_config.read('pbgui.ini', encoding='utf-8')
         except Exception as e:
             print(f"{datetime.now().isoformat(sep=' ', timespec='seconds')} Warning: failed reading pbgui.ini ({e}); keeping previous fetch_users: {self._fetch_users}")
             return
@@ -101,7 +105,7 @@ class PBData():
     
     def save_fetch_users(self):
         pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini')
+        pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("pbdata"):
             pb_config.add_section("pbdata")
         pb_config.set("pbdata", "fetch_users", f'{self.fetch_users}')

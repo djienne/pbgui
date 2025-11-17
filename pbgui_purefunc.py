@@ -18,7 +18,7 @@ def ensure_ini_exists():
             print("Created pbgui.ini from pbgui.ini.example")
         else:
             # Create minimal empty config if example doesn't exist
-            with open('pbgui.ini', 'w') as f:
+            with open('pbgui.ini', 'w', encoding='utf-8') as f:
                 f.write("[main]\n")
             print("Created empty pbgui.ini")
     return os.path.exists('pbgui.ini')
@@ -51,18 +51,18 @@ def save_ini(section: str, parameter: str, value: str):
 
     # Read existing config
     pb_config = configparser.ConfigParser()
-    files_read = pb_config.read('pbgui.ini')
+    files_read = pb_config.read('pbgui.ini', encoding='utf-8')
 
     # Validate that the file was actually read
     if not files_read:
         print("Warning: pbgui.ini could not be read, attempting to restore from backup")
         if os.path.exists('pbgui.ini.backup'):
             shutil.copy('pbgui.ini.backup', 'pbgui.ini')
-            files_read = pb_config.read('pbgui.ini')
+            files_read = pb_config.read('pbgui.ini', encoding='utf-8')
             if not files_read:
                 print("Error: Could not read pbgui.ini even after restore. Creating new file.")
                 ensure_ini_exists()
-                pb_config.read('pbgui.ini')
+                pb_config.read('pbgui.ini', encoding='utf-8')
 
     # Add section if it doesn't exist
     if not pb_config.has_section(section):
@@ -73,7 +73,7 @@ def save_ini(section: str, parameter: str, value: str):
 
     # Write to file
     try:
-        with open('pbgui.ini', 'w') as pbgui_configfile:
+        with open('pbgui.ini', 'w', encoding='utf-8') as pbgui_configfile:
             pb_config.write(pbgui_configfile)
     except Exception as e:
         print(f"Error writing to pbgui.ini: {e}")
@@ -91,7 +91,7 @@ def load_ini(section: str, parameter: str):
     ensure_ini_exists()
 
     pb_config = configparser.ConfigParser()
-    pb_config.read('pbgui.ini')
+    pb_config.read('pbgui.ini', encoding='utf-8')
     if pb_config.has_option(section, parameter):
         return pb_config.get(section, parameter)
     else:
@@ -139,7 +139,7 @@ def config_pretty_str(config: dict):
 
 def load_symbols_from_ini(exchange: str, market_type: str):
     pb_config = configparser.ConfigParser()
-    pb_config.read('pbgui.ini')
+    pb_config.read('pbgui.ini', encoding='utf-8')
     if pb_config.has_option("exchanges", f'{exchange}.{market_type}'):
         return eval(pb_config.get("exchanges", f'{exchange}.{market_type}'))
     else:
