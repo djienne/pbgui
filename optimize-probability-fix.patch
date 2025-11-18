@@ -1,0 +1,41 @@
+diff --git a/src/optimize.py b/src/optimize.py
+index 8e272873..a8abce7d 100644
+--- a/src/optimize.py
++++ b/src/optimize.py
+@@ -1338,13 +1338,34 @@ async def main():
+         # Run the optimization
+         logging.info(f"Starting optimize...")
+         lambda_size = max(1, int(round(config["optimize"]["population_size"] * offspring_multiplier)))
++
++        # Validate and normalize crossover and mutation probabilities
++        cxpb = config["optimize"]["crossover_probability"]
++        mutpb = config["optimize"]["mutation_probability"]
++
++        # Ensure probabilities are valid (between 0 and 1)
++        cxpb = max(0.0, min(1.0, cxpb))
++        mutpb = max(0.0, min(1.0, mutpb))
++
++        # Ensure sum does not exceed 1.0 (required by DEAP)
++        if cxpb + mutpb > 1.0:
++            total = cxpb + mutpb
++            # Normalize to maintain ratio but ensure sum <= 1.0
++            cxpb = cxpb / total * 0.99  # Use 0.99 to leave small margin
++            mutpb = mutpb / total * 0.99
++            logging.warning(
++                f"Crossover and mutation probabilities sum exceeded 1.0. "
++                f"Normalized from ({config['optimize']['crossover_probability']:.3f}, "
++                f"{config['optimize']['mutation_probability']:.3f}) to ({cxpb:.3f}, {mutpb:.3f})"
++            )
++
+         population, logbook = algorithms.eaMuPlusLambda(
+             population,
+             toolbox,
+             mu=config["optimize"]["population_size"],
+             lambda_=lambda_size,
+-            cxpb=config["optimize"]["crossover_probability"],
+-            mutpb=config["optimize"]["mutation_probability"],
++            cxpb=cxpb,
++            mutpb=mutpb,
+             ngen=max(1, int(config["optimize"]["iters"] / len(population))),
+             stats=stats,
+             halloffame=hof,
