@@ -11,34 +11,25 @@ import glob
 import sys
 
 # Cross-platform file locking support
-if sys.platform == 'win32':
-    import msvcrt
-    LOCK_EX = 0x1  # Exclusive lock
-    LOCK_SH = 0x0  # Shared lock
-else:
+if sys.platform != 'win32':
     import fcntl
     LOCK_EX = fcntl.LOCK_EX
     LOCK_SH = fcntl.LOCK_SH
+else:
+    # Windows: File locking is optional since this is typically a single-user desktop app
+    # and msvcrt.locking() can cause file access issues
+    LOCK_EX = 0x1
+    LOCK_SH = 0x0
 
 def _acquire_lock(file_obj, lock_type):
     """Acquire a file lock in a cross-platform way."""
     if sys.platform == 'win32':
-        # Windows locking using msvcrt
-        # Note: Windows locks are always exclusive, so we ignore lock_type
-        msvcrt.locking(file_obj.fileno(), msvcrt.LK_LOCK, 1)
+        # Windows: Skip file locking to avoid access issues
+        # This is acceptable for single-user desktop usage
+        pass
     else:
-        # Unix locking using fcntl
+        # Unix locking using fcntl (reliable and necessary for multi-process)
         fcntl.flock(file_obj.fileno(), lock_type)
-
-def _release_lock(file_obj):
-    """Release a file lock in a cross-platform way."""
-    if sys.platform == 'win32':
-        # Windows: unlock
-        try:
-            msvcrt.locking(file_obj.fileno(), msvcrt.LK_UNLCK, 1)
-        except:
-            pass  # Lock may already be released
-    # Unix: lock is released automatically when file is closed
 
 def ensure_ini_exists():
     """
