@@ -6,9 +6,39 @@ from pathlib import Path
 import os
 import shutil
 from datetime import datetime
-import fcntl
 import time
 import glob
+import sys
+
+# Cross-platform file locking support
+if sys.platform == 'win32':
+    import msvcrt
+    LOCK_EX = 0x1  # Exclusive lock
+    LOCK_SH = 0x0  # Shared lock
+else:
+    import fcntl
+    LOCK_EX = fcntl.LOCK_EX
+    LOCK_SH = fcntl.LOCK_SH
+
+def _acquire_lock(file_obj, lock_type):
+    """Acquire a file lock in a cross-platform way."""
+    if sys.platform == 'win32':
+        # Windows locking using msvcrt
+        # Note: Windows locks are always exclusive, so we ignore lock_type
+        msvcrt.locking(file_obj.fileno(), msvcrt.LK_LOCK, 1)
+    else:
+        # Unix locking using fcntl
+        fcntl.flock(file_obj.fileno(), lock_type)
+
+def _release_lock(file_obj):
+    """Release a file lock in a cross-platform way."""
+    if sys.platform == 'win32':
+        # Windows: unlock
+        try:
+            msvcrt.locking(file_obj.fileno(), msvcrt.LK_UNLCK, 1)
+        except:
+            pass  # Lock may already be released
+    # Unix: lock is released automatically when file is closed
 
 def ensure_ini_exists():
     """
@@ -107,7 +137,7 @@ def save_ini(section: str, parameter: str, value: str):
         try:
             with open('pbgui.ini', 'r+', encoding='utf-8') as f:
                 # Acquire exclusive lock (blocks until available)
-                fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                _acquire_lock(f, LOCK_EX)
 
                 try:
                     # Read existing config from file
@@ -181,7 +211,7 @@ def load_ini(section: str, parameter: str):
         try:
             with open('pbgui.ini', 'r', encoding='utf-8') as f:
                 # Acquire shared lock (allows multiple readers, blocks writers)
-                fcntl.flock(f.fileno(), fcntl.LOCK_SH)
+                _acquire_lock(f, LOCK_SH)
 
                 pb_config = configparser.ConfigParser()
                 pb_config.read_file(f)
@@ -266,7 +296,7 @@ def save_ini_batch(updates: dict):
         try:
             with open('pbgui.ini', 'r+', encoding='utf-8') as f:
                 # Acquire exclusive lock (blocks until available)
-                fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                _acquire_lock(f, LOCK_EX)
 
                 try:
                     # Read existing config from file

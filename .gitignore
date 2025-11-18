@@ -13,9 +13,6 @@ __pycache__/
 *.so
 .Python
 
-# Streamlit secrets
-.streamlit/secrets.toml
-
 # Runtime data
 data/
 
