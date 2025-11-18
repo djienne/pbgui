@@ -1811,7 +1811,7 @@ class Optimize:
         self._crossover_eta = 20.0
         self._enable_overrides = []
         self._iters = 100000
-        self._mutation_probability = 0.45
+        self._mutation_probability = 0.2  # Changed from 0.45 to ensure sum with crossover <= 1.0
         self._mutation_eta = 20.0
         self._mutation_indpb = 0.0
         self._n_cpus = 5
@@ -1931,6 +1931,16 @@ class Optimize:
         self._optimize["limits"] = self._limits
     @crossover_probability.setter
     def crossover_probability(self, new_crossover_probability):
+        # Clamp to valid range [0.0, 1.0]
+        new_crossover_probability = max(0.0, min(1.0, new_crossover_probability))
+
+        # Validate that sum with mutation_probability doesn't exceed 1.0
+        if new_crossover_probability + self._mutation_probability > 1.0:
+            # Adjust mutation_probability to maintain valid sum
+            self._mutation_probability = max(0.0, 1.0 - new_crossover_probability)
+            self._optimize["mutation_probability"] = self._mutation_probability
+            print(f"Warning: Adjusted mutation_probability to {self._mutation_probability:.3f} to ensure sum with crossover_probability <= 1.0")
+
         self._crossover_probability = new_crossover_probability
         self._optimize["crossover_probability"] = self._crossover_probability
     @crossover_eta.setter
@@ -1947,6 +1957,16 @@ class Optimize:
         self._optimize["iters"] = self._iters
     @mutation_probability.setter
     def mutation_probability(self, new_mutation_probability):
+        # Clamp to valid range [0.0, 1.0]
+        new_mutation_probability = max(0.0, min(1.0, new_mutation_probability))
+
+        # Validate that sum with crossover_probability doesn't exceed 1.0
+        if self._crossover_probability + new_mutation_probability > 1.0:
+            # Adjust crossover_probability to maintain valid sum
+            self._crossover_probability = max(0.0, 1.0 - new_mutation_probability)
+            self._optimize["crossover_probability"] = self._crossover_probability
+            print(f"Warning: Adjusted crossover_probability to {self._crossover_probability:.3f} to ensure sum with mutation_probability <= 1.0")
+
         self._mutation_probability = new_mutation_probability
         self._optimize["mutation_probability"] = self._mutation_probability
     @mutation_eta.setter
