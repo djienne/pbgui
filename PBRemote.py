@@ -18,6 +18,7 @@ from io import TextIOWrapper
 from datetime import datetime
 import platform
 from PBRun import PBRun
+from pbgui_purefunc import save_ini
 from Status import InstancesStatus
 import shutil
 import hashlib
@@ -1117,13 +1118,8 @@ class PBRemote():
 
     def save_config(self):
         """Save the bucket name used in the remote storage in pbgui.ini."""
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        if not pb_config.has_section("pbremote"):
-            pb_config.add_section("pbremote")
-        pb_config.set("pbremote", "bucket", self.bucket)
-        with open('pbgui.ini', 'w', encoding='utf-8') as configfile:
-            pb_config.write(configfile)
+        # Use locked save_ini to prevent race conditions
+        save_ini("pbremote", "bucket", self.bucket)
 
     def is_rclone_installed(self):
         """Checks the installation by running 'rclone version' as a process."""

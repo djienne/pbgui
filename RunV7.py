@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit_scrollable_textbox as stx
 import pbgui_help
 from pbgui_func import pbdir, PBGDIR, load_symbols_from_ini, validateHJSON, st_file_selector, info_popup, error_popup
+from pbgui_purefunc import load_default_coins
 from PBRemote import PBRemote
 from User import Users
 from Config import Config, ConfigV7, Logging
@@ -386,14 +387,21 @@ class V7Instance():
         for coin in list(set(self.config.live.approved_coins.long + self.config.live.approved_coins.short)):
             if coin in st.session_state.pbcoindata.symbols_notices:
                 st.warning(f'{coin}: {st.session_state.pbcoindata.symbols_notices[coin]}')
+        # Fallback to default coins if symbol list is empty
+        symbols = st.session_state.pbcoindata.symbols
+        if not symbols:
+            default_coins = load_default_coins()
+            symbols = sorted(list(set(default_coins['approved_coins_long'] + default_coins['approved_coins_short'])))
+            if symbols:
+                st.info('Using fallback coin list - CoinMarketCap data unavailable. Check System → Services → PBCoinData status.')
         # Select approved and ignored coins
         col1, col2 = st.columns([1,1], vertical_alignment="bottom")
         with col1:
-            st.multiselect('approved_coins_long', st.session_state.pbcoindata.symbols, key="edit_run_v7_approved_coins_long", help=pbgui_help.approved_coins)
-            st.multiselect('ignored_symbols_long', st.session_state.pbcoindata.symbols, key="edit_run_v7_ignored_coins_long", help=pbgui_help.ignored_coins)
+            st.multiselect('approved_coins_long', symbols, key="edit_run_v7_approved_coins_long", help=pbgui_help.approved_coins)
+            st.multiselect('ignored_symbols_long', symbols, key="edit_run_v7_ignored_coins_long", help=pbgui_help.ignored_coins)
         with col2:
-            st.multiselect('approved_coins_short', st.session_state.pbcoindata.symbols, key="edit_run_v7_approved_coins_short", help=pbgui_help.approved_coins)
-            st.multiselect('ignored_symbols_short', st.session_state.pbcoindata.symbols, key="edit_run_v7_ignored_coins_short", help=pbgui_help.ignored_coins)
+            st.multiselect('approved_coins_short', symbols, key="edit_run_v7_approved_coins_short", help=pbgui_help.approved_coins)
+            st.multiselect('ignored_symbols_short', symbols, key="edit_run_v7_ignored_coins_short", help=pbgui_help.ignored_coins)
 
     def fragment_market_cap(self):
         if "edit_run_v7_market_cap" in st.session_state:

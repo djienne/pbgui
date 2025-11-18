@@ -12,7 +12,7 @@ import time
 import multiprocessing
 import pandas as pd
 from pbgui_func import PBGDIR, pb7dir, pb7venv, validateJSON, config_pretty_str, load_symbols_from_ini, error_popup, info_popup, get_navi_paths, replace_special_chars
-from pbgui_purefunc import load_ini, save_ini
+from pbgui_purefunc import load_ini, save_ini, save_ini_batch, load_default_coins
 from PBCoinData import CoinData
 import uuid
 from Base import Base
@@ -192,14 +192,14 @@ class BacktestV7Queue:
         if not pb_config.has_section("backtest_v7"):
             pb_config.add_section("backtest_v7")
         # Ensure options exist with defaults
+        # Initialize defaults if not present (using locked batch write)
+        needs_init = False
         if not pb_config.has_option("backtest_v7", "autostart"):
-            pb_config.set("backtest_v7", "autostart", "False")
+            needs_init = True
         if not pb_config.has_option("backtest_v7", "cpu"):
-            pb_config.set("backtest_v7", "cpu", "1")
-        # Write back if we added any options
-        if not pb_config.has_option("backtest_v7", "autostart") or not pb_config.has_option("backtest_v7", "cpu"):
-            with open('pbgui.ini', 'w', encoding='utf-8') as f:
-                pb_config.write(f)
+            needs_init = True
+        if needs_init:
+            save_ini_batch({"backtest_v7": {"autostart": "False", "cpu": "1"}})
         self._autostart = eval(pb_config.get("backtest_v7", "autostart", fallback="False"))
         self._cpu = int(pb_config.get("backtest_v7", "cpu", fallback="1"))
         if self._autostart:
@@ -217,13 +217,8 @@ class BacktestV7Queue:
     @cpu.setter
     def cpu(self, new_cpu):
         self._cpu = new_cpu
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        if not pb_config.has_section("backtest_v7"):
-            pb_config.add_section("backtest_v7")
-        pb_config.set("backtest_v7", "cpu", str(self._cpu))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use locked save_ini to prevent race conditions
+        save_ini("backtest_v7", "cpu", str(self._cpu))
 
     @property
     def autostart(self):
@@ -232,13 +227,8 @@ class BacktestV7Queue:
     @autostart.setter
     def autostart(self, new_autostart):
         self._autostart = new_autostart
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        if not pb_config.has_section("backtest_v7"):
-            pb_config.add_section("backtest_v7")
-        pb_config.set("backtest_v7", "autostart", str(self._autostart))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use locked save_ini to prevent race conditions
+        save_ini("backtest_v7", "autostart", str(self._autostart))
         if self._autostart:
             self.run()
         else:
@@ -449,14 +439,13 @@ class BacktestV7Queue:
         self.sort_order = eval(pb_config.get("backtest_v7", "sort_queue_order")) if pb_config.has_option("backtest_v7", "sort_queue_order") else True
 
     def save_sort_queue(self):
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        if not pb_config.has_section("backtest_v7"):
-            pb_config.add_section("backtest_v7")
-        pb_config.set("backtest_v7", "sort_queue", str(self.sort))
-        pb_config.set("backtest_v7", "sort_queue_order", str(self.sort_order))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use locked batch write to prevent race conditions
+        save_ini_batch({
+            "backtest_v7": {
+                "sort_queue": str(self.sort),
+                "sort_queue_order": str(self.sort_order)
+            }
+        })
 
 class BacktestV7Item:
     def __init__(self, backtest_path: str = None):
@@ -672,6 +661,12 @@ class BacktestV7Item:
         symbols = list(set(symbols))
         # sort symbols
         symbols = sorted(symbols)
+        # Fallback to default coins if symbol list is empty
+        if not symbols:
+            default_coins = load_default_coins()
+            symbols = sorted(list(set(default_coins['approved_coins_long'] + default_coins['approved_coins_short'])))
+            if symbols:
+                st.info('Using fallback coin list - CoinMarketCap data unavailable. Check System → Services → PBCoinData status.')
         for symbol in self.config.live.approved_coins.long.copy():
             if symbol not in symbols:
                 self.config.live.approved_coins.long.remove(symbol)
@@ -1756,14 +1751,13 @@ class BacktestV7Results:
         self.sort_results_order = eval(pb_config.get("backtest_v7", "sort_results_order")) if pb_config.has_option("backtest_v7", "sort_results_order") else True
 
     def save_sort_results(self):
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        if not pb_config.has_section("backtest_v7"):
-            pb_config.add_section("backtest_v7")
-        pb_config.set("backtest_v7", "sort_results", str(self.sort_results))
-        pb_config.set("backtest_v7", "sort_results_order", str(self.sort_results_order))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use locked batch write to prevent race conditions
+        save_ini_batch({
+            "backtest_v7": {
+                "sort_results": str(self.sort_results),
+                "sort_results_order": str(self.sort_results_order)
+            }
+        })
 
     def add_to_compare(self):
         ed_key = st.session_state.ed_key
@@ -2049,14 +2043,13 @@ class BacktestsV7:
         self.sort_order = eval(pb_config.get("backtest_v7", "sort_order")) if pb_config.has_option("backtest_v7", "sort_order") else True
 
     def save_sort(self):
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        if not pb_config.has_section("backtest_v7"):
-            pb_config.add_section("backtest_v7")
-        pb_config.set("backtest_v7", "sort", str(self.sort))
-        pb_config.set("backtest_v7", "sort_order", str(self.sort_order))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use locked batch write to prevent race conditions
+        save_ini_batch({
+            "backtest_v7": {
+                "sort": str(self.sort),
+                "sort_order": str(self.sort_order)
+            }
+        })
 
     def find_backtests(self):
         self.backtests = []

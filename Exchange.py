@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from time import sleep
 from datetime import datetime
-from pbgui_purefunc import PBGDIR
+from pbgui_purefunc import PBGDIR, save_ini_batch
 
 class Exchanges(Enum):
     BINANCE = 'binance'
@@ -992,17 +992,19 @@ class Exchange:
 
     def save_symbols(self):
         print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: [{self.id}] Saving symbols to pbgui.ini...')
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        if not pb_config.has_section("exchanges"):
-            pb_config.add_section("exchanges")
-        pb_config.set("exchanges", f'{self.id}.swap', f'{self.swap}')
+        # Build updates dict with all symbol types for this exchange
+        updates = {
+            "exchanges": {
+                f'{self.id}.swap': f'{self.swap}'
+            }
+        }
         if self.spot:
-            pb_config.set("exchanges", f'{self.id}.spot', f'{self.spot}')
+            updates["exchanges"][f'{self.id}.spot'] = f'{self.spot}'
         if self.cpt:
-            pb_config.set("exchanges", f'{self.id}.cpt', f'{self.cpt}')
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+            updates["exchanges"][f'{self.id}.cpt'] = f'{self.cpt}'
+
+        # Use locked batch write to prevent race conditions
+        save_ini_batch(updates)
         print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: [{self.id}] Successfully saved symbols to pbgui.ini')
 
     def load_symbols(self):

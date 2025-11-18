@@ -12,6 +12,7 @@ import configparser
 import time
 import multiprocessing
 from pbgui_func import pbdir, pbvenv, PBGDIR, load_symbols_from_ini, error_popup, info_popup, get_navi_paths, replace_special_chars
+from pbgui_purefunc import save_ini
 import uuid
 from pathlib import Path, PurePath
 from User import Users
@@ -138,11 +139,9 @@ class OptimizeMultiQueue:
         pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("optimize_multi"):
             pb_config.add_section("optimize_multi")
-        # Ensure option exists with default
+        # Ensure option exists with default (using locked write)
         if not pb_config.has_option("optimize_multi", "autostart"):
-            pb_config.set("optimize_multi", "autostart", "False")
-            with open('pbgui.ini', 'w', encoding='utf-8') as f:
-                pb_config.write(f)
+            save_ini("optimize_multi", "autostart", "False")
         self._autostart = eval(pb_config.get("optimize_multi", "autostart", fallback="False"))
         if self._autostart:
             self.run()
@@ -154,11 +153,8 @@ class OptimizeMultiQueue:
     @autostart.setter
     def autostart(self, new_autostart):
         self._autostart = new_autostart
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        pb_config.set("optimize_multi", "autostart", str(self._autostart))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use locked save_ini to prevent race conditions
+        save_ini("optimize_multi", "autostart", str(self._autostart))
         if self._autostart:
             self.run()
         else:

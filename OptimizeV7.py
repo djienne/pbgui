@@ -12,6 +12,7 @@ import multiprocessing
 from Exchange import Exchange
 from PBCoinData import CoinData
 from pbgui_func import pb7dir, pb7venv, PBGDIR, load_symbols_from_ini, error_popup, info_popup, get_navi_paths, replace_special_chars
+from pbgui_purefunc import load_default_coins, save_ini, save_ini_batch
 import uuid
 from pathlib import Path, PurePath
 from User import Users
@@ -184,11 +185,9 @@ class OptimizeV7Queue:
         pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("optimize_v7"):
             pb_config.add_section("optimize_v7")
-        # Ensure option exists with default
+        # Ensure option exists with default (using locked write)
         if not pb_config.has_option("optimize_v7", "autostart"):
-            pb_config.set("optimize_v7", "autostart", "False")
-            with open('pbgui.ini', 'w', encoding='utf-8') as f:
-                pb_config.write(f)
+            save_ini("optimize_v7", "autostart", "False")
         self._autostart = eval(pb_config.get("optimize_v7", "autostart", fallback="False"))
         self.load_sort_queue()
         if self._autostart:
@@ -201,11 +200,8 @@ class OptimizeV7Queue:
     @autostart.setter
     def autostart(self, new_autostart):
         self._autostart = new_autostart
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        pb_config.set("optimize_v7", "autostart", str(self._autostart))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use locked save_ini to prevent race conditions
+        save_ini("optimize_v7", "autostart", str(self._autostart))
         if self._autostart:
             self.run()
         else:
@@ -415,14 +411,13 @@ class OptimizeV7Queue:
         self.sort_order = eval(pb_config.get("optimize_v7", "sort_queue_order")) if pb_config.has_option("optimize_v7", "sort_queue_order") else True
 
     def save_sort_queue(self):
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        if not pb_config.has_section("optimize_v7"):
-            pb_config.add_section("optimize_v7")
-        pb_config.set("optimize_v7", "sort_queue", str(self.sort))
-        pb_config.set("optimize_v7", "sort_queue_order", str(self.sort_order))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use locked batch write to prevent race conditions
+        save_ini_batch({
+            "optimize_v7": {
+                "sort_queue": str(self.sort),
+                "sort_queue_order": str(self.sort_order)
+            }
+        })
 
 class OptimizeV7Results:
     def __init__(self):
@@ -550,14 +545,13 @@ class OptimizeV7Results:
         self.sort_results_order = eval(pb_config.get("optimize_v7", "sort_results_order")) if pb_config.has_option("optimize_v7", "sort_results_order") else True
 
     def save_sort_results(self):
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        if not pb_config.has_section("optimize_v7"):
-            pb_config.add_section("optimize_v7")
-        pb_config.set("optimize_v7", "sort_results", str(self.sort_results))
-        pb_config.set("optimize_v7", "sort_results_order", str(self.sort_results_order))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use locked batch write to prevent race conditions
+        save_ini_batch({
+            "optimize_v7": {
+                "sort_results": str(self.sort_results),
+                "sort_results_order": str(self.sort_results_order)
+            }
+        })
 
     def run_3d_plot(self, index):
         # run 3d plot
@@ -1162,6 +1156,12 @@ class OptimizeV7Item:
         symbols = list(set(symbols))
         # sort symbols
         symbols.sort()
+        # Fallback to default coins if symbol list is empty
+        if not symbols:
+            default_coins = load_default_coins()
+            symbols = sorted(list(set(default_coins['approved_coins_long'] + default_coins['approved_coins_short'])))
+            if symbols:
+                st.info('Using fallback coin list - CoinMarketCap data unavailable. Check System → Services → PBCoinData status.')
         for symbol in self.config.live.approved_coins.long.copy():
             if symbol not in symbols:
                 self.config.live.approved_coins.long.remove(symbol)
@@ -2802,14 +2802,13 @@ class OptimizesV7:
         self.sort_order = eval(pb_config.get("optimize_v7", "sort_order")) if pb_config.has_option("optimize_v7", "sort_order") else True
 
     def save_sort(self):
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        if not pb_config.has_section("optimize_v7"):
-            pb_config.add_section("optimize_v7")
-        pb_config.set("optimize_v7", "sort", str(self.sort))
-        pb_config.set("optimize_v7", "sort_order", str(self.sort_order))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use locked batch write to prevent race conditions
+        save_ini_batch({
+            "optimize_v7": {
+                "sort": str(self.sort),
+                "sort_order": str(self.sort_order)
+            }
+        })
 
     def find_optimizes(self):
         p = str(Path(f'{PBGDIR}/data/opt_v7/*.json'))

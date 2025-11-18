@@ -13,6 +13,7 @@ import os
 import traceback
 from io import TextIOWrapper
 from Exchange import Exchange, Exchanges
+from pbgui_purefunc import save_ini_batch
 
 SYMBOLMAP = {
     #Binance
@@ -342,16 +343,15 @@ class CoinData:
                 self._metadata_interval = int(pb_config.get("coinmarketcap", "metadata_interval"))
     
     def save_config(self):
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        if not pb_config.has_section("coinmarketcap"):
-            pb_config.add_section("coinmarketcap")
-        pb_config.set("coinmarketcap", "api_key", self.api_key)
-        pb_config.set("coinmarketcap", "fetch_limit", str(self.fetch_limit))
-        pb_config.set("coinmarketcap", "fetch_interval", str(self.fetch_interval))
-        pb_config.set("coinmarketcap", "metadata_interval", str(self.metadata_interval))
-        with open('pbgui.ini', 'w', encoding='utf-8') as pbgui_configfile:
-            pb_config.write(pbgui_configfile)
+        # Use locked batch write to prevent race conditions
+        save_ini_batch({
+            "coinmarketcap": {
+                "api_key": self.api_key,
+                "fetch_limit": str(self.fetch_limit),
+                "fetch_interval": str(self.fetch_interval),
+                "metadata_interval": str(self.metadata_interval)
+            }
+        })
 
     def fetch_api_status(self):
         url = 'https://pro-api.coinmarketcap.com/v1/key/info'

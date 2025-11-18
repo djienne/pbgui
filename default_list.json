@@ -1,0 +1,5 @@
+{
+  "approved_coins_long": ["HYPE", "BTC", "SOL"],
+  "approved_coins_short": ["HYPE", "BTC", "SOL"],
+  "description": "Fallback coin list when CoinMarketCap parsing fails. You can customize this list with your preferred default coins."
+}

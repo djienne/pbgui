@@ -24,6 +24,7 @@ import traceback
 import uuid
 from Status import InstanceStatus, InstancesStatus
 from PBCoinData import CoinData
+from pbgui_purefunc import save_ini
 import re
 
 class Monitor():
@@ -1397,29 +1398,20 @@ class PBRun():
     def update_activate_v7(self):
         self.activate_v7_ts = int(datetime.now().timestamp())
         self.instances_status_v7.activate_ts = self.activate_v7_ts
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        pb_config.set("main", "activate_v7_ts", str(self.activate_v7_ts))
-        with open('pbgui.ini', 'w', encoding='utf-8') as pbgui_configfile:
-            pb_config.write(pbgui_configfile)
+        # Use locked save_ini to prevent race conditions
+        save_ini("main", "activate_v7_ts", str(self.activate_v7_ts))
 
     def update_activate(self):
         self.activate_ts = int(datetime.now().timestamp())
         self.instances_status.activate_ts = self.activate_ts
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        pb_config.set("main", "activate_ts", str(self.activate_ts))
-        with open('pbgui.ini', 'w', encoding='utf-8') as pbgui_configfile:
-            pb_config.write(pbgui_configfile)
+        # Use locked save_ini to prevent race conditions
+        save_ini("main", "activate_ts", str(self.activate_ts))
 
     def update_activate_single(self):
         self.activate_single_ts = int(datetime.now().timestamp())
         self.instances_status_single.activate_ts = self.activate_single_ts
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        pb_config.set("main", "activate_single_ts", str(self.activate_single_ts))
-        with open('pbgui.ini', 'w', encoding='utf-8') as pbgui_configfile:
-            pb_config.write(pbgui_configfile)
+        # Use locked save_ini to prevent race conditions
+        save_ini("main", "activate_single_ts", str(self.activate_single_ts))
 
     def watch_v7(self, v7_instances : list = None):
         """Create or delete v7 instances and activate them or not depending on their status.

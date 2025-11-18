@@ -5,6 +5,7 @@ from OptimizeConfig import OptimizeConfigs, OptimizeConfig
 from pathlib import Path, PurePath
 from shutil import rmtree
 from pbgui_func import pbdir, pbvenv, PBGDIR, get_navi_paths
+from pbgui_purefunc import save_ini_batch
 import json
 import glob
 import datetime
@@ -447,14 +448,16 @@ class OptimizeQueue:
             pb_config.set("optimize", "backtest_best", "1")
         if not pb_config.has_option("optimize", "backtest_sharp"):
             pb_config.set("optimize", "backtest_sharp", "0")
+        # Initialize defaults if not present (using locked batch write)
+        needs_init = {}
         if not pb_config.has_option("optimize", "backtest_adg"):
-            pb_config.set("optimize", "backtest_adg", "0")
+            needs_init["backtest_adg"] = "0"
         if not pb_config.has_option("optimize", "backtest_drawdown"):
-            pb_config.set("optimize", "backtest_drawdown", "0")
+            needs_init["backtest_drawdown"] = "0"
         if not pb_config.has_option("optimize", "backtest_stuck"):
-            pb_config.set("optimize", "backtest_stuck", "0")
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+            needs_init["backtest_stuck"] = "0"
+        if needs_init:
+            save_ini_batch({"optimize": needs_init})
         self.load_options()
         self.pbgdir = Path.cwd()
         self.dest = Path(f'{self.pbgdir}/data/opt_queue')
@@ -527,17 +530,18 @@ class OptimizeQueue:
         self._backtest_stuck = int(pb_config.get("optimize", "backtest_stuck"))
 
     def save_options(self):
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        pb_config.set("optimize", "cpu", str(self._cpu))
-        pb_config.set("optimize", "mode", str(self._mode))
-        pb_config.set("optimize", "backtest_best", str(self._backtest_best))
-        pb_config.set("optimize", "backtest_sharp", str(self._backtest_sharp))
-        pb_config.set("optimize", "backtest_adg", str(self._backtest_adg))
-        pb_config.set("optimize", "backtest_drawdown", str(self._backtest_drawdown))
-        pb_config.set("optimize", "backtest_stuck", str(self._backtest_stuck))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use locked batch write to prevent race conditions
+        save_ini_batch({
+            "optimize": {
+                "cpu": str(self._cpu),
+                "mode": str(self._mode),
+                "backtest_best": str(self._backtest_best),
+                "backtest_sharp": str(self._backtest_sharp),
+                "backtest_adg": str(self._backtest_adg),
+                "backtest_drawdown": str(self._backtest_drawdown),
+                "backtest_stuck": str(self._backtest_stuck)
+            }
+        })
 
     def is_running(self):
         if self.pid():
