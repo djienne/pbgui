@@ -458,7 +458,8 @@ class BacktestV7Item:
             self.config.load_config()
             self.name = self.config.backtest.base_dir.split('/')[-1]
             self.results.results_path = str(Path(f'{pb7dir()}/backtests/pbgui/{self.name}'))
-            self.date = Path(self.path).stat().st_mtime
+            path_obj = Path(self.path)
+            self.date = path_obj.stat().st_mtime if path_obj.exists() else 0
             self.results.name = self.name
         else:
             self.initialize()
