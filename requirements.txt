@@ -14,3 +14,4 @@ ansible-runner==2.4.0
 passlib==1.7.4
 python-telegram-bot==21.10
 paramiko==4.0.0
+portalocker>=2.8.2

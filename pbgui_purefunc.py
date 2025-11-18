@@ -8,28 +8,16 @@ import shutil
 from datetime import datetime
 import time
 import glob
-import sys
+import portalocker
 
-# Cross-platform file locking support
-if sys.platform != 'win32':
-    import fcntl
-    LOCK_EX = fcntl.LOCK_EX
-    LOCK_SH = fcntl.LOCK_SH
-else:
-    # Windows: File locking is optional since this is typically a single-user desktop app
-    # and msvcrt.locking() can cause file access issues
-    LOCK_EX = 0x1
-    LOCK_SH = 0x0
+# Cross-platform file locking support using portalocker
+# Works reliably on both Windows and Unix/Linux systems
+LOCK_EX = portalocker.LOCK_EX  # Exclusive lock (for writes)
+LOCK_SH = portalocker.LOCK_SH  # Shared lock (for reads)
 
 def _acquire_lock(file_obj, lock_type):
-    """Acquire a file lock in a cross-platform way."""
-    if sys.platform == 'win32':
-        # Windows: Skip file locking to avoid access issues
-        # This is acceptable for single-user desktop usage
-        pass
-    else:
-        # Unix locking using fcntl (reliable and necessary for multi-process)
-        fcntl.flock(file_obj.fileno(), lock_type)
+    """Acquire a file lock in a cross-platform way using portalocker."""
+    portalocker.lock(file_obj, lock_type)
 
 def ensure_ini_exists():
     """
