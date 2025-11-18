@@ -2,8 +2,6 @@
 
 > This repository is a **fork** of the original [msei99/pbgui](https://github.com/msei99/pbgui) project, optimized for running **PBGui Master on Windows 11 desktop PC** as the masternode that manages remote Linux VPS instances running Passivbot.
 
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Y8Y216Q3QS)
-
 **Current Version:** v1.37
 
 ## Overview
@@ -58,122 +56,30 @@ I recommend the following VPS providers:
 
 ## Installation
 
-### Option 1: Install PBGui Master on a VPS (Recommended)
-
-#### Step 1: Get a Linux VPS
-
-Get a Linux VPS from IONOS using my [referral link](https://aklam.io/esMFvG)
-
-- Select Server Linux VPS
-- For beginners, VPS S is good for running a few bots, the dashboard, and some backtests
-- For optimization, you need a bigger system like VPS XL, XXL, or a dedicated server
-- Install the VPS with Ubuntu 24.04
-
-#### Step 2: Connect and Run Initial Setup
-
-Add your VPS IP and VPN IP to your hosts file (`/etc/hosts`):
-
-```bash
-# Syntax:
-# <ip> <hostname>
-# 10.8.0.1 <hostname>-vpn
-
-# Example:
-87.106.x.x manibot01
-10.8.0.1 manibot01-vpn
-```
-
-Connect with SSH to your new VPS and login as root with the temporary root password:
-
-```bash
-ssh root@<hostname>
-
-# Setup hostname and user. Disable root login
-bash <(curl -sL https://raw.githubusercontent.com/msei99/pbgui/refs/heads/main/setup/master_vps_init.sh) <hostname> <user>
-```
-
-#### Step 3: Setup PBGui Master
-
-Disconnect as root and reconnect as the new user:
-
-```bash
-# Disconnect as root
-exit
-
-# SSH to your VPS
-ssh <user>@<hostname>
-
-# Create swap
-bash <(curl -sL https://raw.githubusercontent.com/msei99/pbgui/refs/heads/main/setup/setup_swap.sh) <size>
-
-# Setup OpenVPN
-bash <(curl -sL https://raw.githubusercontent.com/msei99/pbgui/refs/heads/main/setup/setup_openvpn.sh)
-
-# Setup Google Authenticator and add QR code to your TOTP App
-bash <(curl -sL https://raw.githubusercontent.com/msei99/pbgui/refs/heads/main/setup/setup_totp.sh)
-cat /home/mani/GA-QR.txt
-
-# Setup Firewall
-# The Firewall Setup can be run in 3 ways:
-# 1. Default — allow SSH from everywhere (low security)
-bash <(curl -sL https://raw.githubusercontent.com/msei99/pbgui/refs/heads/main/setup/setup_firewall.sh)
-# 2. VPN-only SSH access (high security)
-bash <(curl -sL https://raw.githubusercontent.com/msei99/pbgui/refs/heads/main/setup/setup_firewall.sh) -i
-# 3. Specific IPs + VPN
-bash <(curl -sL https://raw.githubusercontent.com/msei99/pbgui/refs/heads/main/setup/setup_firewall.sh) -i 1.2.3.4,1.2.3.5
-
-# Setup PBGui
-bash <(curl -sL https://raw.githubusercontent.com/msei99/pbgui/refs/heads/main/install.sh)
-
-# Setup crontab for autostart
-bash <(curl -sL https://raw.githubusercontent.com/msei99/pbgui/refs/heads/main/setup/setup_autostart.sh)
-```
-
-#### Step 4: Setup OpenVPN Client
-
-Get the OpenVPN configuration file:
-
-```bash
-scp <hostname>:/home/<user>/<user>_client/<user>.ovpn .
-```
-
-Import the `.ovpn` file to your OpenVPN client.
-
-#### Step 5: Connect Your VPN
-
-Use the GUI or connect from shell:
-
-```bash
-sudo openvpn --config <user>.ovpn
-```
-
-#### Step 6: Connect to PBGui
-
-Once connected to VPN, open PBGui at: `http://<hostname>-vpn:8501/`
-
----
-
-### Option 2: Ubuntu Automatic Installer
-
-There is an install script for Ubuntu (tested on Ubuntu 24.04):
-
-```bash
-curl -L https://raw.githubusercontent.com/msei99/pbgui/refs/heads/main/install.sh | bash
-```
-
----
-
-### Option 3: Manual Installation for All Linux Distributions
+### Option 1: Manual Installation for All Linux Distributions
 
 Clone PBGui and Passivbot v6 and v7:
 
 ```bash
 git clone https://github.com/djienne/pbgui.git
 git clone https://github.com/enarjord/passivbot.git pb6
-git clone https://github.com/enarjord/passivbot.git pb7
+git clone https://github.com/djienne/passivbot.git
+```
+
+Install Python 3.10
+
+```bash
+# Check if Python 3.10 is installed
+python3.10 --version
+
+If not installed, install it first:
+# Ubuntu/Debian
+sudo apt update
+sudo apt install python3.10 python3.10-venv
 ```
 
 Create virtual environments:
+
 
 ```bash
 python3.10 -m venv venv_pbgui
@@ -184,7 +90,13 @@ python3.10 -m venv venv_pb7
 Install requirements for pb6, pb7, and pbgui:
 
 ```bash
-# Install pb6
+# Install pbgui
+source venv_pbgui/bin/activate
+cd pbgui
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# Install pb6 (optional)
 source venv_pb6/bin/activate
 cd pb6
 git checkout v6.1.4b
@@ -203,17 +115,17 @@ sudo apt-get install rustc cargo
 maturin develop --release
 deactivate
 cd ../..
+```
 
-# Install pbgui
-source venv_pbgui/bin/activate
-cd pbgui
-pip install --upgrade pip
-pip install -r requirements.txt
+Start PBGui with:
+
+```bash
+streamlit run pbgui.py
 ```
 
 ---
 
-### Option 4: Windows 11 Installation (No WSL)
+### Option 2: Windows 11 Installation (No WSL)
 
 These steps describe how to run PBGui directly on Windows 11 using Python 3.10 from Chocolatey.
 
