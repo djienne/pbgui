@@ -1,0 +1,140 @@
+diff --git a/src/downloader.py b/src/downloader.py
+index 44783acf..ffa83a13 100644
+--- a/src/downloader.py
++++ b/src/downloader.py
+@@ -449,6 +449,9 @@ class OHLCVManager:
+         cc=None,
+         gap_tolerance_ohlcvs_minutes=120.0,
+         verbose=True,
++        request_timeout_ms=30000,
++        max_retries=3,
++        retry_delay_base=2.0,
+     ):
+         self.exchange = normalize_exchange_name(exchange)
+         self.quote = get_quote(exchange)
+@@ -468,6 +471,11 @@ class OHLCVManager:
+         self.request_timestamps = deque(maxlen=1000)  # for rate-limiting checks
+         self.gap_tolerance_ohlcvs_minutes = gap_tolerance_ohlcvs_minutes
+ 
++        # Timeout and retry configuration
++        self.request_timeout_ms = request_timeout_ms
++        self.max_retries = max_retries
++        self.retry_delay_base = retry_delay_base
++
+     def update_date_range(self, new_start_date=None, new_end_date=None):
+         if new_start_date:
+             if isinstance(new_start_date, (float, int)):
+@@ -631,17 +639,17 @@ class OHLCVManager:
+             return 0.0
+         if self.exchange == "binanceusdm":
+             # Fetches first by default
+-            ohlcvs = await self.cc.fetch_ohlcv(self.get_symbol(coin), since=1, timeframe="1d")
++            ohlcvs = await self.fetch_ohlcv_with_retry(self.get_symbol(coin), since=1, timeframe="1d")
+         elif self.exchange == "bybit":
+             fts = await self.find_first_day_bybit(coin)
+             return fts
+         elif self.exchange == "gateio":
+             # Data since 2018
+-            ohlcvs = await self.cc.fetch_ohlcv(
++            ohlcvs = await self.fetch_ohlcv_with_retry(
+                 self.get_symbol(coin), since=int(date_to_ts("2018-01-01")), timeframe="1d"
+             )
+             if not ohlcvs:
+-                ohlcvs = await self.cc.fetch_ohlcv(
++                ohlcvs = await self.fetch_ohlcv_with_retry(
+                     self.get_symbol(coin), since=int(date_to_ts("2020-01-01")), timeframe="1d"
+                 )
+         elif self.exchange in ("kucoin", "kucoinfutures"):
+@@ -659,8 +667,81 @@ class OHLCVManager:
+ 
+     def load_cc(self):
+         if self.cc is None:
+-            self.cc = getattr(ccxt, self.exchange)({"enableRateLimit": True})
+-            self.cc.options["defaultType"] = "swap"
++            self.cc = getattr(ccxt, self.exchange)({
++                "enableRateLimit": True,
++                "timeout": self.request_timeout_ms,
++                "options": {"defaultType": "swap"}
++            })
++
++    async def fetch_ohlcv_with_retry(self, symbol, **kwargs):
++        """
++        Wrapper around ccxt.fetch_ohlcv with retry logic for transient errors.
++
++        Args:
++            symbol: Trading symbol
++            **kwargs: Additional arguments to pass to fetch_ohlcv (since, timeframe, etc.)
++
++        Returns:
++            OHLCV data or raises exception after max retries
++        """
++        last_exception = None
++
++        for attempt in range(self.max_retries + 1):
++            try:
++                # Ensure ccxt client is loaded
++                if self.cc is None:
++                    self.load_cc()
++
++                result = await self.cc.fetch_ohlcv(symbol, **kwargs)
++
++                # Success - return immediately
++                if attempt > 0 and self.verbose:
++                    logging.info(f"{self.exchange} fetch_ohlcv succeeded on attempt {attempt + 1}/{self.max_retries + 1}")
++                return result
++
++            except (
++                ccxt.RequestTimeout,
++                ccxt.NetworkError,
++                asyncio.TimeoutError,
++                aiohttp.ClientError,
++            ) as e:
++                # Transient errors - retry with exponential backoff
++                last_exception = e
++
++                if attempt < self.max_retries:
++                    delay = self.retry_delay_base ** attempt
++                    if self.verbose:
++                        logging.warning(
++                            f"{self.exchange} fetch_ohlcv timeout/network error (attempt {attempt + 1}/{self.max_retries + 1}): {e}"
++                        )
++                        logging.info(f"Retrying in {delay:.1f} seconds...")
++                    await asyncio.sleep(delay)
++                else:
++                    # Final attempt failed
++                    if self.verbose:
++                        logging.error(
++                            f"{self.exchange} fetch_ohlcv failed after {self.max_retries + 1} attempts: {e}"
++                        )
++                    raise
++
++            except (
++                ccxt.BadSymbol,
++                ccxt.ExchangeError,
++            ) as e:
++                # Permanent errors - don't retry
++                if self.verbose:
++                    logging.warning(f"{self.exchange} fetch_ohlcv permanent error: {e}")
++                raise
++
++            except Exception as e:
++                # Unknown errors - log and don't retry (could be code bugs)
++                if self.verbose:
++                    logging.error(f"{self.exchange} fetch_ohlcv unexpected error: {e}")
++                raise
++
++        # Should not reach here, but if we do, raise the last exception
++        if last_exception:
++            raise last_exception
+ 
+     async def load_markets(self):
+         self.load_cc()
+@@ -1231,7 +1312,7 @@ class OHLCVManager:
+ 
+         # GateIO typically allows up to 1440+ limit for 1m timeframe in one call
+         limit = 1500
+-        ohlcvs = await self.cc.fetch_ohlcv(
++        ohlcvs = await self.fetch_ohlcv_with_retry(
+             symbol, timeframe=interval, since=start_ts_day, limit=limit
+         )
+         if not ohlcvs:
