@@ -19,37 +19,130 @@ def _acquire_lock(file_obj, lock_type):
     """Acquire a file lock in a cross-platform way using portalocker."""
     portalocker.lock(file_obj, lock_type)
 
-def ensure_ini_exists():
+def validate_ini_structure(file_path='pbgui.ini'):
     """
-    Ensure pbgui.ini exists. If not, attempt recovery from recent backup first.
-    Only creates from example as last resort to prevent config loss.
+    Validate that pbgui.ini has the minimum expected structure.
+    Returns (is_valid, sections_found, file_size).
     """
-    if not os.path.exists('pbgui.ini'):
-        print("WARNING: pbgui.ini not found! Attempting recovery...")
+    try:
+        file_size = os.path.getsize(file_path)
 
-        # Try to restore from the most recent timestamped backup first
-        backup_files = sorted(glob.glob('pbgui.ini.backup.*'), reverse=True)
-        for backup_file in backup_files:
-            try:
-                backup_age = time.time() - os.path.getmtime(backup_file)
-                if backup_age < 3600:  # Less than 1 hour old
-                    shutil.copy(backup_file, 'pbgui.ini')
-                    print(f"Restored pbgui.ini from recent backup: {backup_file}")
-                    return True
-            except Exception as e:
-                print(f"Could not restore from {backup_file}: {e}")
+        # Sanity check: file should be at least 50 bytes (more than just [main])
+        # If it's too small, it's likely corrupted or reset
+        if file_size < 50:
+            return False, [], file_size
+
+        # Try to parse the file
+        config = configparser.ConfigParser()
+        config.read(file_path, encoding='utf-8')
+        sections = config.sections()
+
+        # Minimum expected sections for a valid config
+        # At least should have 'main' section
+        if len(sections) < 1:
+            return False, sections, file_size
+
+        # If we had sections before and now we only have 1-2, likely corrupted
+        # (This catches the case where only [pbdata] and [main] remain)
+        if len(sections) < 2 and file_size < 200:
+            return False, sections, file_size
+
+        return True, sections, file_size
+
+    except Exception as e:
+        print(f"Error validating {file_path}: {e}")
+        return False, [], 0
+
+def find_best_backup():
+    """
+    Find the best backup file to restore from.
+    Prioritizes large, complete backups over recent but corrupted ones.
+    Returns the backup file path or None.
+    """
+    backup_files = sorted(glob.glob('pbgui.ini.backup.*'), reverse=True)
+
+    best_backup = None
+    best_score = 0
+
+    for backup_file in backup_files:
+        try:
+            is_valid, sections, file_size = validate_ini_structure(backup_file)
+
+            # Skip invalid or tiny backups
+            if not is_valid or file_size < 100:
                 continue
 
-        # Try the standard backup file
-        if os.path.exists('pbgui.ini.backup'):
-            try:
+            # Score based on: validity + size + recency
+            backup_age = time.time() - os.path.getmtime(backup_file)
+            age_score = max(0, 100 - (backup_age / 3600))  # Prefer recent (within 100 hours)
+            size_score = min(100, file_size / 1000)  # Larger is better (up to 100KB)
+            section_score = len(sections) * 10  # More sections is better
+
+            total_score = size_score + section_score + (age_score * 0.1)
+
+            if total_score > best_score:
+                best_score = total_score
+                best_backup = backup_file
+
+        except Exception as e:
+            print(f"Could not evaluate {backup_file}: {e}")
+            continue
+
+    # Also check standard backup
+    if os.path.exists('pbgui.ini.backup'):
+        try:
+            is_valid, sections, file_size = validate_ini_structure('pbgui.ini.backup')
+            if is_valid and file_size > 100:
                 backup_age = time.time() - os.path.getmtime('pbgui.ini.backup')
                 if backup_age < 86400:  # Less than 24 hours old
-                    shutil.copy('pbgui.ini.backup', 'pbgui.ini')
-                    print("Restored pbgui.ini from backup (less than 24h old)")
+                    age_score = max(0, 100 - (backup_age / 3600))
+                    size_score = min(100, file_size / 1000)
+                    section_score = len(sections) * 10
+                    total_score = size_score + section_score + (age_score * 0.1)
+
+                    if total_score > best_score:
+                        best_backup = 'pbgui.ini.backup'
+        except Exception:
+            pass
+
+    return best_backup
+
+def ensure_ini_exists():
+    """
+    Ensure pbgui.ini exists and has valid structure.
+    If file is missing or corrupted, attempt recovery from best backup.
+    Validates structure to prevent incomplete/corrupted configs.
+    """
+    needs_recovery = False
+
+    if not os.path.exists('pbgui.ini'):
+        print("WARNING: pbgui.ini not found! Attempting recovery...")
+        needs_recovery = True
+    else:
+        # File exists, but validate its structure
+        is_valid, sections, file_size = validate_ini_structure()
+
+        if not is_valid:
+            print(f"WARNING: pbgui.ini appears corrupted (size={file_size}, sections={sections})!")
+            print("Attempting recovery from backup...")
+            needs_recovery = True
+
+    if needs_recovery:
+        # Find the best backup to restore from
+        best_backup = find_best_backup()
+
+        if best_backup:
+            try:
+                shutil.copy(best_backup, 'pbgui.ini')
+                is_valid, sections, file_size = validate_ini_structure()
+                if is_valid:
+                    print(f"✓ Successfully restored pbgui.ini from {best_backup}")
+                    print(f"  Recovered {len(sections)} sections, {file_size} bytes")
                     return True
+                else:
+                    print(f"WARNING: Restored backup {best_backup} is also invalid!")
             except Exception as e:
-                print(f"Could not restore from pbgui.ini.backup: {e}")
+                print(f"Could not restore from {best_backup}: {e}")
 
         # Last resort: copy from example
         if os.path.exists('pbgui.ini.example'):

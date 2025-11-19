@@ -14,6 +14,7 @@ import time
 import multiprocessing
 import pandas as pd
 from pbgui_func import pbdir, pbvenv, PBGDIR, config_pretty_str
+from pbgui_purefunc import save_ini, save_ini_batch
 import uuid
 from Base import Base
 from Config import Config
@@ -317,11 +318,15 @@ class BacktestQueue:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         if not pb_config.has_section("backtest"):
-            pb_config.add_section("backtest")
-            pb_config.set("backtest", "autostart", "False")
-            pb_config.set("backtest", "cpu", "1")
-            with open('pbgui.ini', 'w', encoding='utf-8') as f:
-                pb_config.write(f)
+            # Use safe locked write instead of direct ConfigParser write
+            save_ini_batch({
+                "backtest": {
+                    "autostart": "False",
+                    "cpu": "1"
+                }
+            })
+            # Re-read the config after writing
+            pb_config.read('pbgui.ini', encoding='utf-8')
         self._autostart = eval(pb_config.get("backtest", "autostart"))
         self._cpu = int(pb_config.get("backtest", "cpu"))
         if self._autostart:
@@ -339,11 +344,8 @@ class BacktestQueue:
     @cpu.setter
     def cpu(self, new_cpu):
         self._cpu = new_cpu
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        pb_config.set("backtest", "cpu", str(self._cpu))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use safe locked write instead of direct ConfigParser write
+        save_ini("backtest", "cpu", str(self._cpu))
 
     @property
     def autostart(self):
@@ -352,11 +354,8 @@ class BacktestQueue:
     @autostart.setter
     def autostart(self, new_autostart):
         self._autostart = new_autostart
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        pb_config.set("backtest", "autostart", str(self._autostart))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use safe locked write instead of direct ConfigParser write
+        save_ini("backtest", "autostart", str(self._autostart))
         if self._autostart:
             self.run()
         else:
@@ -532,13 +531,8 @@ class BacktestResults:
         return []
 
     def save_view_col(self):
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        if not pb_config.has_section("backtest"):
-            pb_config.add_section("backtest")
-        pb_config.set("backtest", "view_col", f'{self.view_col}')
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use safe locked write instead of direct ConfigParser write
+        save_ini("backtest", "view_col", f'{self.view_col}')
 
     def setup_table(self):
         # Remove or add keys after selecting them

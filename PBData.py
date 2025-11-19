@@ -9,6 +9,7 @@ from datetime import datetime
 import platform
 import traceback
 from pbgui_func import PBGDIR
+from pbgui_purefunc import save_ini
 from Database import Database
 from User import Users
 import configparser
@@ -104,13 +105,8 @@ class PBData():
             self.fetch_users = []  # Default to empty list if not set
     
     def save_fetch_users(self):
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        if not pb_config.has_section("pbdata"):
-            pb_config.add_section("pbdata")
-        pb_config.set("pbdata", "fetch_users", f'{self.fetch_users}')
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use safe locked write instead of direct ConfigParser write
+        save_ini("pbdata", "fetch_users", f'{self.fetch_users}')
 
     # def update_db(self):
     #     # Load users first so filtering in load_fetch_users is correct

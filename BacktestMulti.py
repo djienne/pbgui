@@ -17,6 +17,7 @@ import time
 import multiprocessing
 import pandas as pd
 from pbgui_func import PBGDIR, pbvenv, pbdir, validateJSON, config_pretty_str, replace_special_chars
+from pbgui_purefunc import save_ini, save_ini_batch
 import uuid
 from Base import Base
 from Config import Config
@@ -147,17 +148,22 @@ class BacktestMultiQueue:
         self.items = []
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
+        needs_write = False
+        # Check if section or options are missing
         if not pb_config.has_section("backtest_multi"):
-            pb_config.add_section("backtest_multi")
-        # Ensure options exist with defaults
-        if not pb_config.has_option("backtest_multi", "autostart"):
-            pb_config.set("backtest_multi", "autostart", "False")
-        if not pb_config.has_option("backtest_multi", "cpu"):
-            pb_config.set("backtest_multi", "cpu", "1")
-        # Write back if we added any options
-        if not pb_config.has_option("backtest_multi", "autostart") or not pb_config.has_option("backtest_multi", "cpu"):
-            with open('pbgui.ini', 'w', encoding='utf-8') as f:
-                pb_config.write(f)
+            needs_write = True
+        elif not pb_config.has_option("backtest_multi", "autostart") or not pb_config.has_option("backtest_multi", "cpu"):
+            needs_write = True
+        # Use safe locked write if needed
+        if needs_write:
+            save_ini_batch({
+                "backtest_multi": {
+                    "autostart": "False",
+                    "cpu": "1"
+                }
+            })
+            # Re-read the config after writing
+            pb_config.read('pbgui.ini', encoding='utf-8')
         self._autostart = eval(pb_config.get("backtest_multi", "autostart", fallback="False"))
         self._cpu = int(pb_config.get("backtest_multi", "cpu", fallback="1"))
         if self._autostart:
@@ -175,11 +181,8 @@ class BacktestMultiQueue:
     @cpu.setter
     def cpu(self, new_cpu):
         self._cpu = new_cpu
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        pb_config.set("backtest_multi", "cpu", str(self._cpu))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use safe locked write instead of direct ConfigParser write
+        save_ini("backtest_multi", "cpu", str(self._cpu))
 
     @property
     def autostart(self):
@@ -188,11 +191,8 @@ class BacktestMultiQueue:
     @autostart.setter
     def autostart(self, new_autostart):
         self._autostart = new_autostart
-        pb_config = configparser.ConfigParser()
-        pb_config.read('pbgui.ini', encoding='utf-8')
-        pb_config.set("backtest_multi", "autostart", str(self._autostart))
-        with open('pbgui.ini', 'w', encoding='utf-8') as f:
-            pb_config.write(f)
+        # Use safe locked write instead of direct ConfigParser write
+        save_ini("backtest_multi", "autostart", str(self._autostart))
         if self._autostart:
             self.run()
         else:
