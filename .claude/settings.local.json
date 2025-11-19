@@ -17,7 +17,8 @@
       "Bash(git commit:*)",
       "Bash(copy:*)",
       "Bash(\".\\venv_pbgui\\Scripts\\python.exe\" -c \"import PBData; print(''PBData.py imported successfully'')\")",
-      "Bash(\".\\venv_pbgui\\Scripts\\python.exe\" -c \"import BacktestMulti; print(''BacktestMulti.py imported successfully'')\")"
+      "Bash(\".\\venv_pbgui\\Scripts\\python.exe\" -c \"import BacktestMulti; print(''BacktestMulti.py imported successfully'')\")",
+      "Bash(git mv:*)"
     ],
     "deny": [],
     "ask": []
