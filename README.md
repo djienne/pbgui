@@ -31,6 +31,50 @@ Passivbot GUI (pbgui) is a web interface for Passivbot programmed in Python with
 - **Master Server:** Windows 11 desktop PC (this fork's primary target) or Linux server with sufficient resources (e.g., 32GB RAM, 8 CPUs)
 - **VPS for Running Passivbot:** Minimum specifications of 1 CPU, 1GB Memory, and 10GB SSD
 
+## Code Architecture
+
+PBGui is organized into a modular Python package structure for better maintainability and testing:
+
+```
+pbgui/
+├── pbgui.py                    # Entry point (Streamlit app launcher)
+├── Config.py                   # Compatibility alias for legacy imports
+├── Exchange.py                 # Compatibility alias for legacy imports
+├── pbgui/                      # Main package
+│   ├── configs/                # Configuration hierarchy
+│   │   ├── v6/                 # Passivbot v6 config classes
+│   │   └── v7/                 # Passivbot v7 config classes
+│   │       ├── config.py       # Main v7 config
+│   │       ├── bot.py          # Bot settings
+│   │       ├── long.py         # Long position settings
+│   │       ├── short.py        # Short position settings
+│   │       ├── backtest.py     # Backtest settings
+│   │       ├── optimize.py     # Optimization settings
+│   │       └── ...
+│   ├── ui/                     # UI components
+│   ├── balance_calculator.py   # Balance calculation utilities
+│   ├── compat_patches.py       # Backward compatibility helpers
+│   └── utils.py                # Shared utilities
+├── exchanges/                  # Exchange-specific implementations
+│   ├── base.py                 # Base exchange class
+│   ├── binance.py              # Binance integration
+│   ├── bybit.py                # Bybit integration
+│   ├── okx.py                  # OKX integration
+│   └── ...
+├── pb_configs/                 # Configuration templates and models
+└── navi/                       # Streamlit page modules
+```
+
+**Key Design Principles:**
+
+- **Modular Structure**: Code organized by functionality (configs, exchanges, UI)
+- **Backward Compatibility**: Legacy imports still work via compatibility aliases
+- **Separation of Concerns**: Exchange logic separated from config management
+- **Type Safety**: Structured configuration classes with validation
+- **Maintainability**: Smaller, focused modules instead of monolithic files
+
+For detailed architecture information, see [CLAUDE.md](CLAUDE.md).
+
 ## Contact & Support
 
 - **Telegram Support:** https://t.me/+kwyeyrmjQ-lkYTJk

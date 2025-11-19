@@ -1,0 +1,606 @@
+class Bounds:
+
+    CLOSE_GRID_MARKUP_END_MIN = 0.0
+    CLOSE_GRID_MARKUP_END_MAX = 1.0
+    CLOSE_GRID_MARKUP_END_STEP = 0.001
+    CLOSE_GRID_MARKUP_END_ROUND = 3
+    CLOSE_GRID_MARKUP_END_FORMAT = f'%.{CLOSE_GRID_MARKUP_END_ROUND}f'
+
+    CLOSE_GRID_MARKUP_START_MIN = 0.0
+    CLOSE_GRID_MARKUP_START_MAX = 1.0
+    CLOSE_GRID_MARKUP_START_STEP = 0.001
+    CLOSE_GRID_MARKUP_START_ROUND = 3
+    CLOSE_GRID_MARKUP_START_FORMAT = f'%.{CLOSE_GRID_MARKUP_START_ROUND}f'
+    
+    # CLOSE_GRID_MARKUP_RANGE_MIN = 0.0
+    # CLOSE_GRID_MARKUP_RANGE_MAX = 1.0
+    # CLOSE_GRID_MARKUP_RANGE_STEP = 0.01
+    # CLOSE_GRID_MARKUP_RANGE_ROUND = 2
+    # CLOSE_GRID_MARKUP_RANGE_FORMAT = f'%.{CLOSE_GRID_MARKUP_RANGE_ROUND}f'
+
+    # CLOSE_GRID_MIN_MARKUP_MIN = 0.0
+    # CLOSE_GRID_MIN_MARKUP_MAX = 1.0
+    # CLOSE_GRID_MIN_MARKUP_STEP = 0.001
+    # CLOSE_GRID_MIN_MARKUP_ROUND = 3
+    # CLOSE_GRID_MIN_MARKUP_FORMAT = f'%.{CLOSE_GRID_MIN_MARKUP_ROUND}f'
+
+    CLOSE_GRID_QTY_PCT_MIN = 0.0
+    CLOSE_GRID_QTY_PCT_MAX = 1.0
+    CLOSE_GRID_QTY_PCT_STEP = 0.05
+    CLOSE_GRID_QTY_PCT_ROUND = 2
+    CLOSE_GRID_QTY_PCT_FORMAT = f'%.{CLOSE_GRID_QTY_PCT_ROUND}f'
+
+    CLOSE_TRAILING_GRID_RATIO_MIN = -1.0
+    CLOSE_TRAILING_GRID_RATIO_MAX = 1.0
+    CLOSE_TRAILING_GRID_RATIO_STEP = 0.01
+    CLOSE_TRAILING_GRID_RATIO_ROUND = 2
+    CLOSE_TRAILING_GRID_RATIO_FORMAT = f'%.{CLOSE_TRAILING_GRID_RATIO_ROUND}f'
+
+    CLOSE_TRAILING_QTY_PCT_MIN = 0.0
+    CLOSE_TRAILING_QTY_PCT_MAX = 1.0
+    CLOSE_TRAILING_QTY_PCT_STEP = 0.001
+    CLOSE_TRAILING_QTY_PCT_ROUND = 3
+    CLOSE_TRAILING_QTY_PCT_FORMAT = f'%.{CLOSE_TRAILING_QTY_PCT_ROUND}f'
+
+    CLOSE_TRAILING_RETRACEMENT_PCT_MIN = 0.0
+    CLOSE_TRAILING_RETRACEMENT_PCT_MAX = 1.0
+    CLOSE_TRAILING_RETRACEMENT_PCT_STEP = 0.001
+    CLOSE_TRAILING_RETRACEMENT_PCT_ROUND = 3
+    CLOSE_TRAILING_RETRACEMENT_PCT_FORMAT = f'%.{CLOSE_TRAILING_RETRACEMENT_PCT_ROUND}f'
+
+    CLOSE_TRAILING_THRESHOLD_PCT_MIN = -1.0
+    CLOSE_TRAILING_THRESHOLD_PCT_MAX = 1.0
+    CLOSE_TRAILING_THRESHOLD_PCT_STEP = 0.0001
+    CLOSE_TRAILING_THRESHOLD_PCT_ROUND = 4
+    CLOSE_TRAILING_THRESHOLD_PCT_FORMAT = f'%.{CLOSE_TRAILING_THRESHOLD_PCT_ROUND}f'
+
+    EMA_SPAN_0_MIN = 1.0
+    EMA_SPAN_0_MAX = 10000.0
+    EMA_SPAN_0_STEP = 1.0
+    EMA_SPAN_0_ROUND = 1
+    EMA_SPAN_0_FORMAT = f'%.{EMA_SPAN_0_ROUND}f'
+
+    EMA_SPAN_1_MIN = 1.0
+    EMA_SPAN_1_MAX = 10000.0
+    EMA_SPAN_1_STEP = 1.0
+    EMA_SPAN_1_ROUND = 1
+    EMA_SPAN_1_FORMAT = f'%.{EMA_SPAN_1_ROUND}f'
+
+    ENTRY_GRID_DOUBLE_DOWN_FACTOR_MIN = 0.0
+    ENTRY_GRID_DOUBLE_DOWN_FACTOR_MAX = 10.0
+    ENTRY_GRID_DOUBLE_DOWN_FACTOR_STEP = 0.05
+    ENTRY_GRID_DOUBLE_DOWN_FACTOR_ROUND = 2
+    ENTRY_GRID_DOUBLE_DOWN_FACTOR_FORMAT = f'%.{ENTRY_GRID_DOUBLE_DOWN_FACTOR_ROUND}f'
+
+    ENTRY_GRID_SPACING_LOG_SPAN_HOURS_MIN = 0.0
+    ENTRY_GRID_SPACING_LOG_SPAN_HOURS_MAX = 10000.0
+    ENTRY_GRID_SPACING_LOG_SPAN_HOURS_STEP = 1.0
+    ENTRY_GRID_SPACING_LOG_SPAN_HOURS_ROUND = 1
+    ENTRY_GRID_SPACING_LOG_SPAN_HOURS_FORMAT = f'%.{ENTRY_GRID_SPACING_LOG_SPAN_HOURS_ROUND}f'
+
+    ENTRY_GRID_SPACING_LOG_WEIGHT_MIN = 0.0
+    ENTRY_GRID_SPACING_LOG_WEIGHT_MAX = 10000.0
+    ENTRY_GRID_SPACING_LOG_WEIGHT_STEP = 1.0
+    ENTRY_GRID_SPACING_LOG_WEIGHT_ROUND = 1
+    ENTRY_GRID_SPACING_LOG_WEIGHT_FORMAT = f'%.{ENTRY_GRID_SPACING_LOG_WEIGHT_ROUND}f'
+
+    ENTRY_GRID_SPACING_PCT_MIN = 0.0
+    ENTRY_GRID_SPACING_PCT_MAX = 1.0
+    ENTRY_GRID_SPACING_PCT_STEP = 0.001
+    ENTRY_GRID_SPACING_PCT_ROUND = 3
+    ENTRY_GRID_SPACING_PCT_FORMAT = f'%.{ENTRY_GRID_SPACING_PCT_ROUND}f'
+
+    ENTRY_GRID_SPACING_WE_WEIGHT_MIN = 0.0
+    ENTRY_GRID_SPACING_WE_WEIGHT_MAX = 100.0
+    ENTRY_GRID_SPACING_WE_WEIGHT_STEP = 0.01
+    ENTRY_GRID_SPACING_WE_WEIGHT_ROUND = 2
+    ENTRY_GRID_SPACING_WE_WEIGHT_FORMAT = f'%.{ENTRY_GRID_SPACING_WE_WEIGHT_ROUND}f'
+
+    ENTRY_INITIAL_EMA_DIST_MIN = -1.0
+    ENTRY_INITIAL_EMA_DIST_MAX = 1.0
+    ENTRY_INITIAL_EMA_DIST_STEP = 0.0001
+    ENTRY_INITIAL_EMA_DIST_ROUND = 4
+    ENTRY_INITIAL_EMA_DIST_FORMAT = f'%.{ENTRY_INITIAL_EMA_DIST_ROUND}f'
+
+    ENTRY_INITIAL_QTY_PCT_MIN = 0.0
+    ENTRY_INITIAL_QTY_PCT_MAX = 1.0
+    ENTRY_INITIAL_QTY_PCT_STEP = 0.001
+    ENTRY_INITIAL_QTY_PCT_ROUND = 3
+    ENTRY_INITIAL_QTY_PCT_FORMAT = f'%.{ENTRY_INITIAL_QTY_PCT_ROUND}f'
+
+    ENTRY_TRAILING_DOUBLE_DOWN_FACTOR_MIN = 0.0
+    ENTRY_TRAILING_DOUBLE_DOWN_FACTOR_MAX = 10.0
+    ENTRY_TRAILING_DOUBLE_DOWN_FACTOR_STEP = 0.05
+    ENTRY_TRAILING_DOUBLE_DOWN_FACTOR_ROUND = 2
+    ENTRY_TRAILING_DOUBLE_DOWN_FACTOR_FORMAT = f'%.{ENTRY_TRAILING_DOUBLE_DOWN_FACTOR_ROUND}f'
+    
+    ENTRY_TRAILING_GRID_RATIO_MIN = -1.0
+    ENTRY_TRAILING_GRID_RATIO_MAX = 1.0
+    ENTRY_TRAILING_GRID_RATIO_STEP = 0.01
+    ENTRY_TRAILING_GRID_RATIO_ROUND = 2
+    ENTRY_TRAILING_GRID_RATIO_FORMAT = f'%.{ENTRY_TRAILING_GRID_RATIO_ROUND}f'
+
+    ENTRY_TRAILING_RETRACEMENT_PCT_MIN = 0.0
+    ENTRY_TRAILING_RETRACEMENT_PCT_MAX = 1.0
+    ENTRY_TRAILING_RETRACEMENT_PCT_STEP = 0.001
+    ENTRY_TRAILING_RETRACEMENT_PCT_ROUND = 3
+    ENTRY_TRAILING_RETRACEMENT_PCT_FORMAT = f'%.{ENTRY_TRAILING_RETRACEMENT_PCT_ROUND}f'
+
+    ENTRY_TRAILING_THRESHOLD_PCT_MIN = -1.0
+    ENTRY_TRAILING_THRESHOLD_PCT_MAX = 1.0
+    ENTRY_TRAILING_THRESHOLD_PCT_STEP = 0.0001
+    ENTRY_TRAILING_THRESHOLD_PCT_ROUND = 4
+    ENTRY_TRAILING_THRESHOLD_PCT_FORMAT = f'%.{ENTRY_TRAILING_THRESHOLD_PCT_ROUND}f'
+
+    FILTER_LOG_RANGE_EMA_SPAN_MIN = 0.0
+    FILTER_LOG_RANGE_EMA_SPAN_MAX = 10000.0
+    FILTER_LOG_RANGE_EMA_SPAN_STEP = 1.0
+    FILTER_LOG_RANGE_EMA_SPAN_ROUND = 0
+    FILTER_LOG_RANGE_EMA_SPAN_FORMAT = f'%.{FILTER_LOG_RANGE_EMA_SPAN_ROUND}f'
+
+    FILTER_VOLUME_DROP_PCT_MIN = 0.0
+    FILTER_VOLUME_DROP_PCT_MAX = 1.0
+    FILTER_VOLUME_DROP_PCT_STEP = 0.01
+    FILTER_VOLUME_DROP_PCT_ROUND = 2
+    FILTER_VOLUME_DROP_PCT_FORMAT = f'%.{FILTER_VOLUME_DROP_PCT_ROUND}f'
+
+    FILTER_VOLUME_EMA_SPAN_MIN = 0.0
+    FILTER_VOLUME_EMA_SPAN_MAX = 10000.0
+    FILTER_VOLUME_EMA_SPAN_STEP = 1.0
+    FILTER_VOLUME_EMA_SPAN_ROUND = 0
+    FILTER_VOLUME_EMA_SPAN_FORMAT = f'%.{FILTER_VOLUME_EMA_SPAN_ROUND}f'
+
+    N_POSITIONS_MIN = 0.0
+    N_POSITIONS_MAX = 100.0
+    N_POSITIONS_STEP = 1.0
+    N_POSITIONS_ROUND = 0
+    N_POSITIONS_FORMAT = f'%.{N_POSITIONS_ROUND}f'
+
+    TOTAL_WALLET_EXPOSURE_LIMIT_MIN = 0.0
+    TOTAL_WALLET_EXPOSURE_LIMIT_MAX = 100.0
+    TOTAL_WALLET_EXPOSURE_LIMIT_STEP = 0.1
+    TOTAL_WALLET_EXPOSURE_LIMIT_ROUND = 1
+    TOTAL_WALLET_EXPOSURE_LIMIT_FORMAT = f'%.{TOTAL_WALLET_EXPOSURE_LIMIT_ROUND}f'
+
+    UNSTUCK_CLOSE_PCT_MIN = 0.0
+    UNSTUCK_CLOSE_PCT_MAX = 1.0
+    UNSTUCK_CLOSE_PCT_STEP = 0.001
+    UNSTUCK_CLOSE_PCT_ROUND = 3
+    UNSTUCK_CLOSE_PCT_FORMAT = f'%.{UNSTUCK_CLOSE_PCT_ROUND}f'
+
+    UNSTUCK_EMA_DIST_MIN = -1.0
+    UNSTUCK_EMA_DIST_MAX = 1.0
+    UNSTUCK_EMA_DIST_STEP = 0.001
+    UNSTUCK_EMA_DIST_ROUND = 3
+    UNSTUCK_EMA_DIST_FORMAT = f'%.{UNSTUCK_EMA_DIST_ROUND}f'
+
+    UNSTUCK_LOSS_ALLOWANCE_PCT_MIN = 0.0
+    UNSTUCK_LOSS_ALLOWANCE_PCT_MAX = 1.0
+    UNSTUCK_LOSS_ALLOWANCE_PCT_STEP = 0.001
+    UNSTUCK_LOSS_ALLOWANCE_PCT_ROUND = 3
+    UNSTUCK_LOSS_ALLOWANCE_PCT_FORMAT = f'%.{UNSTUCK_LOSS_ALLOWANCE_PCT_ROUND}f'
+
+    UNSTUCK_THRESHOLD_MIN = 0.0
+    UNSTUCK_THRESHOLD_MAX = 1.0
+    UNSTUCK_THRESHOLD_STEP = 0.01
+    UNSTUCK_THRESHOLD_ROUND = 2
+    UNSTUCK_THRESHOLD_FORMAT = f'%.{UNSTUCK_THRESHOLD_ROUND}f'
+
+    def __init__(self):
+        # bounds long
+        # self._long_close_grid_markup_range_0 = 0.0
+        # self._long_close_grid_markup_range_1 = 0.03
+        # self._long_close_grid_min_markup_0 = 0.001
+        # self._long_close_grid_min_markup_1 = 0.03
+        self._long_close_grid_markup_end_0 = 0.001
+        self._long_close_grid_markup_end_1 = 0.03
+        self._long_close_grid_markup_start_0 = 0.001
+        self._long_close_grid_markup_start_1 = 0.03
+        self._long_close_grid_qty_pct_0 = 0.05
+        self._long_close_grid_qty_pct_1 = 1.0
+        self._long_close_trailing_grid_ratio_0 = 0.0
+        self._long_close_trailing_grid_ratio_1 = 1.0
+        self._long_close_trailing_qty_pct_0 = 0.05
+        self._long_close_trailing_qty_pct_1 = 1.0
+        self._long_close_trailing_retracement_pct_0 = 0.0
+        self._long_close_trailing_retracement_pct_1 = 0.1
+        self._long_close_trailing_threshold_pct_0 = -0.1
+        self._long_close_trailing_threshold_pct_1 = 0.1
+        self._long_ema_span_0_0 = 200.0
+        self._long_ema_span_0_1 = 1440.0
+        self._long_ema_span_1_0 = 200.0
+        self._long_ema_span_1_1 = 1440.0
+        self._long_entry_grid_double_down_factor_0 = 0.1
+        self._long_entry_grid_double_down_factor_1 = 3.0
+        self._long_entry_grid_spacing_log_span_hours_0 = 24.0
+        self._long_entry_grid_spacing_log_span_hours_1 = 336.0
+        self._long_entry_grid_spacing_log_weight_0 = 0.0
+        self._long_entry_grid_spacing_log_weight_1 = 400.0
+        self._long_entry_grid_spacing_pct_0 = 0.001
+        self._long_entry_grid_spacing_pct_1 = 0.12
+        self._long_entry_grid_spacing_we_weight_0 = 0.0
+        self._long_entry_grid_spacing_we_weight_1 = 10.0
+        self._long_entry_initial_ema_dist_0 = -0.1
+        self._long_entry_initial_ema_dist_1 = 0.003
+        self._long_entry_initial_qty_pct_0 = 0.005
+        self._long_entry_initial_qty_pct_1 = 0.1
+        self._long_entry_trailing_double_down_factor_0 = 0.1
+        self._long_entry_trailing_double_down_factor_1 = 3.0
+        self._long_entry_trailing_grid_ratio_0 = -1.0
+        self._long_entry_trailing_grid_ratio_1 = 1.0
+        self._long_entry_trailing_retracement_pct_0 = 0.0
+        self._long_entry_trailing_retracement_pct_1 = 0.1
+        self._long_entry_trailing_threshold_pct_0 = -0.1
+        self._long_entry_trailing_threshold_pct_1 = 0.1
+        self._long_filter_log_range_ema_span_0 = 10.0
+        self._long_filter_log_range_ema_span_1 = 360.0
+        self._long_filter_volume_drop_pct_0 = 0.5
+        self._long_filter_volume_drop_pct_1 = 1.0
+        self._long_filter_volume_ema_span_0 = 10.0
+        self._long_filter_volume_ema_span_1 = 360.0
+        self._long_n_positions_0 = 1.0
+        self._long_n_positions_1 = 20.0
+        self._long_total_wallet_exposure_limit_0 = 0.0
+        self._long_total_wallet_exposure_limit_1 = 5.0
+        self._long_unstuck_close_pct_0 = 0.001
+        self._long_unstuck_close_pct_1 = 0.1
+        self._long_unstuck_ema_dist_0 = -0.1
+        self._long_unstuck_ema_dist_1 = 0.01
+        self._long_unstuck_loss_allowance_pct_0 = 0.0
+        self._long_unstuck_loss_allowance_pct_1 = 0.05
+        self._long_unstuck_threshold_0 = 0.4
+        self._long_unstuck_threshold_1 = 0.95
+        # bounds short
+        # self._short_close_grid_markup_range_0 = 0.0
+        # self._short_close_grid_markup_range_1 = 0.03
+        # self._short_close_grid_min_markup_0 = 0.001
+        # self._short_close_grid_min_markup_1 = 0.03
+        self._short_close_grid_markup_end_0 = 0.001
+        self._short_close_grid_markup_end_1 = 0.03
+        self._short_close_grid_markup_start_0 = 0.001
+        self._short_close_grid_markup_start_1 = 0.03
+        self._short_close_grid_qty_pct_0 = 0.05
+        self._short_close_grid_qty_pct_1 = 1.0
+        self._short_close_trailing_grid_ratio_0 = -1.0
+        self._short_close_trailing_grid_ratio_1 = 1.0
+        self._short_close_trailing_qty_pct_0 = 0.05
+        self._short_close_trailing_qty_pct_1 = 1.0
+        self._short_close_trailing_retracement_pct_0 = 0.0
+        self._short_close_trailing_retracement_pct_1 = 0.1
+        self._short_close_trailing_threshold_pct_0 = -0.1
+        self._short_close_trailing_threshold_pct_1 = 0.1
+        self._short_ema_span_0_0 = 200.0
+        self._short_ema_span_0_1 = 1440.0
+        self._short_ema_span_1_0 = 200.0
+        self._short_ema_span_1_1 = 1440.0
+        self._short_entry_grid_double_down_factor_0 = 0.1
+        self._short_entry_grid_double_down_factor_1 = 3.0
+        self._short_entry_grid_spacing_log_span_hours_0 = 24.0
+        self._short_entry_grid_spacing_log_span_hours_1 = 336.0
+        self._short_entry_grid_spacing_log_weight_0 = 0.0
+        self._short_entry_grid_spacing_log_weight_1 = 400.0
+        self._short_entry_grid_spacing_pct_0 = 0.001
+        self._short_entry_grid_spacing_pct_1 = 0.12
+        self._short_entry_grid_spacing_we_weight_0 = 0.0
+        self._short_entry_grid_spacing_we_weight_1 = 10.0
+        self._short_entry_initial_ema_dist_0 = -0.1
+        self._short_entry_initial_ema_dist_1 = 0.003
+        self._short_entry_initial_qty_pct_0 = 0.005
+        self._short_entry_initial_qty_pct_1 = 0.1
+        self._short_entry_trailing_double_down_factor_0 = 0.1
+        self._short_entry_trailing_double_down_factor_1 = 3.0
+        self._short_entry_trailing_grid_ratio_0 = -1.0
+        self._short_entry_trailing_grid_ratio_1 = 1.0
+        self._short_entry_trailing_retracement_pct_0 = 0.0
+        self._short_entry_trailing_retracement_pct_1 = 0.1
+        self._short_entry_trailing_threshold_pct_0 = -0.1
+        self._short_entry_trailing_threshold_pct_1 = 0.1
+        self._short_filter_log_range_ema_span_0 = 10.0
+        self._short_filter_log_range_ema_span_1 = 360.0
+        self._short_filter_volume_drop_pct_0 = 0.5
+        self._short_filter_volume_drop_pct_1 = 1.0
+        self._short_filter_volume_ema_span_0 = 10.0
+        self._short_filter_volume_ema_span_1 = 360.0
+        self._short_n_positions_0 = 1.0
+        self._short_n_positions_1 = 20.0
+        self._short_total_wallet_exposure_limit_0 = 0.0
+        self._short_total_wallet_exposure_limit_1 = 5.0
+        self._short_unstuck_close_pct_0 = 0.001
+        self._short_unstuck_close_pct_1 = 0.1
+        self._short_unstuck_ema_dist_0 = -0.1
+        self._short_unstuck_ema_dist_1 = 0.01
+        self._short_unstuck_loss_allowance_pct_0 = 0.0
+        self._short_unstuck_loss_allowance_pct_1 = 0.05
+        self._short_unstuck_threshold_0 = 0.4
+        self._short_unstuck_threshold_1 = 0.95
+        self._bounds = {
+                # "long_close_grid_markup_range": [self._long_close_grid_markup_range_0, self._long_close_grid_markup_range_1],
+                # "long_close_grid_min_markup": [self._long_close_grid_min_markup_0, self._long_close_grid_min_markup_1],
+                "long_close_grid_markup_end": [self._long_close_grid_markup_end_0, self._long_close_grid_markup_end_1],
+                "long_close_grid_markup_start": [self._long_close_grid_markup_start_0, self._long_close_grid_markup_start_1],
+                "long_close_grid_qty_pct": [self._long_close_grid_qty_pct_0, self._long_close_grid_qty_pct_1],
+                "long_close_trailing_grid_ratio": [self._long_close_trailing_grid_ratio_0, self._long_close_trailing_grid_ratio_1],
+                "long_close_trailing_qty_pct": [self._long_close_trailing_qty_pct_0, self._long_close_trailing_qty_pct_1],
+                "long_close_trailing_retracement_pct": [self._long_close_trailing_retracement_pct_0, self._long_close_trailing_retracement_pct_1],
+                "long_close_trailing_threshold_pct": [self._long_close_trailing_threshold_pct_0, self._long_close_trailing_threshold_pct_1],
+                "long_ema_span_0": [self._long_ema_span_0_0, self._long_ema_span_0_1],
+                "long_ema_span_1": [self._long_ema_span_1_0, self._long_ema_span_1_1],
+                "long_entry_grid_double_down_factor": [self._long_entry_grid_double_down_factor_0, self._long_entry_grid_double_down_factor_1],
+                "long_entry_grid_spacing_log_span_hours": [self._long_entry_grid_spacing_log_span_hours_0, self._long_entry_grid_spacing_log_span_hours_1],
+                "long_entry_grid_spacing_log_weight": [self._long_entry_grid_spacing_log_weight_0, self._long_entry_grid_spacing_log_weight_1],
+                "long_entry_grid_spacing_pct": [self._long_entry_grid_spacing_pct_0, self._long_entry_grid_spacing_pct_1],
+                "long_entry_grid_spacing_we_weight": [self._long_entry_grid_spacing_we_weight_0, self._long_entry_grid_spacing_we_weight_1],
+                "long_entry_initial_ema_dist": [self._long_entry_initial_ema_dist_0, self._long_entry_initial_ema_dist_1],
+                "long_entry_initial_qty_pct": [self._long_entry_initial_qty_pct_0, self._long_entry_initial_qty_pct_1],
+                "long_entry_trailing_double_down_factor": [self._long_entry_trailing_double_down_factor_0, self._long_entry_trailing_double_down_factor_1],
+                "long_entry_trailing_grid_ratio": [self._long_entry_trailing_grid_ratio_0, self._long_entry_trailing_grid_ratio_1],
+                "long_entry_trailing_retracement_pct": [self._long_entry_trailing_retracement_pct_0, self._long_entry_trailing_retracement_pct_1],
+                "long_entry_trailing_threshold_pct": [self._long_entry_trailing_threshold_pct_0, self._long_entry_trailing_threshold_pct_1],
+                "long_filter_log_range_ema_span": [self._long_filter_log_range_ema_span_0, self._long_filter_log_range_ema_span_1],
+                "long_filter_volume_drop_pct": [self._long_filter_volume_drop_pct_0, self._long_filter_volume_drop_pct_1],
+                "long_filter_volume_ema_span": [self._long_filter_volume_ema_span_0, self._long_filter_volume_ema_span_1],
+                "long_n_positions": [self._long_n_positions_0, self._long_n_positions_1],
+                "long_total_wallet_exposure_limit": [self._long_total_wallet_exposure_limit_0, self._long_total_wallet_exposure_limit_1],
+                "long_unstuck_close_pct": [self._long_unstuck_close_pct_0, self._long_unstuck_close_pct_1],
+                "long_unstuck_ema_dist": [self._long_unstuck_ema_dist_0, self._long_unstuck_ema_dist_1],
+                "long_unstuck_loss_allowance_pct": [self._long_unstuck_loss_allowance_pct_0, self._long_unstuck_loss_allowance_pct_1],
+                "long_unstuck_threshold": [self._long_unstuck_threshold_0, self._long_unstuck_threshold_1],
+                # "short_close_grid_markup_range": [self._short_close_grid_markup_range_0, self._short_close_grid_markup_range_1],
+                # "short_close_grid_min_markup": [self._short_close_grid_min_markup_0, self._short_close_grid_min_markup_1],
+                "short_close_grid_markup_end": [self._short_close_grid_markup_end_0, self._short_close_grid_markup_end_1],
+                "short_close_grid_markup_start": [self._short_close_grid_markup_start_0, self._short_close_grid_markup_start_1],
+                "short_close_grid_qty_pct": [self._short_close_grid_qty_pct_0, self._short_close_grid_qty_pct_1],
+                "short_close_trailing_grid_ratio": [self._short_close_trailing_grid_ratio_0, self._short_close_trailing_grid_ratio_1],
+                "short_close_trailing_qty_pct": [self._short_close_trailing_qty_pct_0, self._short_close_trailing_qty_pct_1],
+                "short_close_trailing_retracement_pct": [self._short_close_trailing_retracement_pct_0, self._short_close_trailing_retracement_pct_1],
+                "short_close_trailing_threshold_pct": [self._short_close_trailing_threshold_pct_0, self._short_close_trailing_threshold_pct_1],
+                "short_ema_span_0": [self._short_ema_span_0_0, self._short_ema_span_0_1],
+                "short_ema_span_1": [self._short_ema_span_1_0, self._short_ema_span_1_1],
+                "short_entry_grid_double_down_factor": [self._short_entry_grid_double_down_factor_0, self._short_entry_grid_double_down_factor_1],
+                "short_entry_grid_spacing_log_span_hours": [self._short_entry_grid_spacing_log_span_hours_0, self._short_entry_grid_spacing_log_span_hours_1],
+                "short_entry_grid_spacing_log_weight": [self._short_entry_grid_spacing_log_weight_0, self._short_entry_grid_spacing_log_weight_1],
+                "short_entry_grid_spacing_pct": [self._short_entry_grid_spacing_pct_0, self._short_entry_grid_spacing_pct_1],
+                "short_entry_grid_spacing_we_weight": [self._short_entry_grid_spacing_we_weight_0, self._short_entry_grid_spacing_we_weight_1],
+                "short_entry_initial_ema_dist": [self._short_entry_initial_ema_dist_0, self._short_entry_initial_ema_dist_1],
+                "short_entry_initial_qty_pct": [self._short_entry_initial_qty_pct_0, self._short_entry_initial_qty_pct_1],
+                "short_entry_trailing_double_down_factor": [self._short_entry_trailing_double_down_factor_0, self._short_entry_trailing_double_down_factor_1],
+                "short_entry_trailing_grid_ratio": [self._short_entry_trailing_grid_ratio_0, self._short_entry_trailing_grid_ratio_1],
+                "short_entry_trailing_retracement_pct": [self._short_entry_trailing_retracement_pct_0, self._short_entry_trailing_retracement_pct_1],
+                "short_entry_trailing_threshold_pct": [self._short_entry_trailing_threshold_pct_0, self._short_entry_trailing_threshold_pct_1],
+                "short_filter_log_range_ema_span": [self._short_filter_log_range_ema_span_0, self._short_filter_log_range_ema_span_1],
+                "short_filter_volume_drop_pct": [self._short_filter_volume_drop_pct_0, self._short_filter_volume_drop_pct_1],
+                "short_filter_volume_ema_span": [self._short_filter_volume_ema_span_0, self._short_filter_volume_ema_span_1],
+                "short_n_positions": [self._short_n_positions_0, self._short_n_positions_1],
+                "short_total_wallet_exposure_limit": [self._short_total_wallet_exposure_limit_0, self._short_total_wallet_exposure_limit_1],
+                "short_unstuck_close_pct": [self._short_unstuck_close_pct_0, self._short_unstuck_close_pct_1],
+                "short_unstuck_ema_dist": [self._short_unstuck_ema_dist_0, self._short_unstuck_ema_dist_1],
+                "short_unstuck_loss_allowance_pct": [self._short_unstuck_loss_allowance_pct_0, self._short_unstuck_loss_allowance_pct_1],
+                "short_unstuck_threshold": [self._short_unstuck_threshold_0, self._short_unstuck_threshold_1]
+            }
+    
+    def __repr__(self):
+        return str(self._bounds)
+
+    @property
+    def bounds(self): return self._bounds
+    
+    @bounds.setter
+    def bounds(self, new_bounds):
+        # if "long_close_grid_markup_range" in new_bounds:
+        #     self.long_close_grid_markup_range_0 = new_bounds["long_close_grid_markup_range"][0]
+        #     self.long_close_grid_markup_range_1 = new_bounds["long_close_grid_markup_range"][1]
+        # if "long_close_grid_min_markup" in new_bounds:
+        #     self.long_close_grid_min_markup_0 = new_bounds["long_close_grid_min_markup"][0]
+        #     self.long_close_grid_min_markup_1 = new_bounds["long_close_grid_min_markup"][1]
+        if "long_close_grid_markup_end" in new_bounds:
+            self.long_close_grid_markup_end_0 = new_bounds["long_close_grid_markup_end"][0]
+            self.long_close_grid_markup_end_1 = new_bounds["long_close_grid_markup_end"][1]
+        if "long_close_grid_markup_start" in new_bounds:
+            self.long_close_grid_markup_start_0 = new_bounds["long_close_grid_markup_start"][0]
+            self.long_close_grid_markup_start_1 = new_bounds["long_close_grid_markup_start"][1]
+        if "long_close_grid_qty_pct" in new_bounds:
+            self.long_close_grid_qty_pct_0 = new_bounds["long_close_grid_qty_pct"][0]
+            self.long_close_grid_qty_pct_1 = new_bounds["long_close_grid_qty_pct"][1]
+        if "long_close_trailing_grid_ratio" in new_bounds:
+            self.long_close_trailing_grid_ratio_0 = new_bounds["long_close_trailing_grid_ratio"][0]
+            self.long_close_trailing_grid_ratio_1 = new_bounds["long_close_trailing_grid_ratio"][1]
+        if "long_close_trailing_qty_pct" in new_bounds:
+            self.long_close_trailing_qty_pct_0 = new_bounds["long_close_trailing_qty_pct"][0]
+            self.long_close_trailing_qty_pct_1 = new_bounds["long_close_trailing_qty_pct"][1]
+        if "long_close_trailing_retracement_pct" in new_bounds:
+            self.long_close_trailing_retracement_pct_0 = new_bounds["long_close_trailing_retracement_pct"][0]
+            self.long_close_trailing_retracement_pct_1 = new_bounds["long_close_trailing_retracement_pct"][1]
+        if "long_close_trailing_threshold_pct" in new_bounds:
+            self.long_close_trailing_threshold_pct_0 = new_bounds["long_close_trailing_threshold_pct"][0]
+            self.long_close_trailing_threshold_pct_1 = new_bounds["long_close_trailing_threshold_pct"][1]
+        if "long_ema_span_0" in new_bounds:
+            self.long_ema_span_0_0 = new_bounds["long_ema_span_0"][0]
+            self.long_ema_span_0_1 = new_bounds["long_ema_span_0"][1]
+        if "long_ema_span_1" in new_bounds:
+            self.long_ema_span_1_0 = new_bounds["long_ema_span_1"][0]
+            self.long_ema_span_1_1 = new_bounds["long_ema_span_1"][1]
+        if "long_entry_grid_double_down_factor" in new_bounds:
+            self.long_entry_grid_double_down_factor_0 = new_bounds["long_entry_grid_double_down_factor"][0]
+            self.long_entry_grid_double_down_factor_1 = new_bounds["long_entry_grid_double_down_factor"][1]
+        if "long_entry_grid_spacing_log_span_hours" in new_bounds:
+            self.long_entry_grid_spacing_log_span_hours_0 = new_bounds["long_entry_grid_spacing_log_span_hours"][0]
+            self.long_entry_grid_spacing_log_span_hours_1 = new_bounds["long_entry_grid_spacing_log_span_hours"][1]
+        if "long_entry_grid_spacing_log_weight" in new_bounds:
+            self.long_entry_grid_spacing_log_weight_0 = new_bounds["long_entry_grid_spacing_log_weight"][0]
+            self.long_entry_grid_spacing_log_weight_1 = new_bounds["long_entry_grid_spacing_log_weight"][1]
+        if "long_entry_grid_spacing_pct" in new_bounds:
+            self.long_entry_grid_spacing_pct_0 = new_bounds["long_entry_grid_spacing_pct"][0]
+            self.long_entry_grid_spacing_pct_1 = new_bounds["long_entry_grid_spacing_pct"][1]
+        if "long_entry_grid_spacing_we_weight" in new_bounds:
+            self.long_entry_grid_spacing_we_weight_0 = new_bounds["long_entry_grid_spacing_we_weight"][0]
+            self.long_entry_grid_spacing_we_weight_1 = new_bounds["long_entry_grid_spacing_we_weight"][1]
+        if "long_entry_initial_ema_dist" in new_bounds:
+            self.long_entry_initial_ema_dist_0 = new_bounds["long_entry_initial_ema_dist"][0]
+            self.long_entry_initial_ema_dist_1 = new_bounds["long_entry_initial_ema_dist"][1]
+        if "long_entry_initial_qty_pct" in new_bounds:
+            self.long_entry_initial_qty_pct_0 = new_bounds["long_entry_initial_qty_pct"][0]
+            self.long_entry_initial_qty_pct_1 = new_bounds["long_entry_initial_qty_pct"][1]
+        if "long_entry_trailing_double_down_factor" in new_bounds:
+            self.long_entry_trailing_double_down_factor_0 = new_bounds["long_entry_trailing_double_down_factor"][0]
+            self.long_entry_trailing_double_down_factor_1 = new_bounds["long_entry_trailing_double_down_factor"][1]
+        if "long_entry_trailing_grid_ratio" in new_bounds:
+            self.long_entry_trailing_grid_ratio_0 = new_bounds["long_entry_trailing_grid_ratio"][0]
+            self.long_entry_trailing_grid_ratio_1 = new_bounds["long_entry_trailing_grid_ratio"][1]
+        if "long_entry_trailing_retracement_pct" in new_bounds:
+            self.long_entry_trailing_retracement_pct_0 = new_bounds["long_entry_trailing_retracement_pct"][0]
+            self.long_entry_trailing_retracement_pct_1 = new_bounds["long_entry_trailing_retracement_pct"][1]
+        if "long_entry_trailing_threshold_pct" in new_bounds:
+            self.long_entry_trailing_threshold_pct_0 = new_bounds["long_entry_trailing_threshold_pct"][0]
+            self.long_entry_trailing_threshold_pct_1 = new_bounds["long_entry_trailing_threshold_pct"][1]
+        if "long_filter_log_range_ema_span" in new_bounds:
+            self.long_filter_log_range_ema_span_0 = new_bounds["long_filter_log_range_ema_span"][0]
+            self.long_filter_log_range_ema_span_1 = new_bounds["long_filter_log_range_ema_span"][1]
+        # Fix for old configs
+        elif "long_filter_noisiness_rolling_window" in new_bounds:
+            self.long_filter_log_range_ema_span_0 = new_bounds["long_filter_noisiness_rolling_window"][0]
+            self.long_filter_log_range_ema_span_1 = new_bounds["long_filter_noisiness_rolling_window"][1]
+        elif "long_filter_rolling_window" in new_bounds:
+            self.long_filter_log_range_ema_span_0 = new_bounds["long_filter_rolling_window"][0]
+            self.long_filter_log_range_ema_span_1 = new_bounds["long_filter_rolling_window"][1]
+        if "long_filter_volume_drop_pct" in new_bounds:
+            self.long_filter_volume_drop_pct_0 = new_bounds["long_filter_volume_drop_pct"][0]
+            self.long_filter_volume_drop_pct_1 = new_bounds["long_filter_volume_drop_pct"][1]
+        # Fix for old configs
+        elif "long_filter_relative_volume_clip_pct" in new_bounds:
+            self.long_filter_volume_drop_pct_0 = new_bounds["long_filter_relative_volume_clip_pct"][0]
+            self.long_filter_volume_drop_pct_1 = new_bounds["long_filter_relative_volume_clip_pct"][1]
+        if "long_filter_volume_ema_span" in new_bounds:
+            self.long_filter_volume_ema_span_0 = new_bounds["long_filter_volume_ema_span"][0]
+            self.long_filter_volume_ema_span_1 = new_bounds["long_filter_volume_ema_span"][1]
+        # Fix for old configs
+        elif "long_filter_rolling_window" in new_bounds:
+            self.long_filter_volume_ema_span_0 = new_bounds["long_filter_rolling_window"][0]
+            self.long_filter_volume_ema_span_1 = new_bounds["long_filter_rolling_window"][1]
+        if "long_n_positions" in new_bounds:
+            self.long_n_positions_0 = new_bounds["long_n_positions"][0]
+            self.long_n_positions_1 = new_bounds["long_n_positions"][1]
+        if "long_total_wallet_exposure_limit" in new_bounds:
+            self.long_total_wallet_exposure_limit_0 = new_bounds["long_total_wallet_exposure_limit"][0]
+            self.long_total_wallet_exposure_limit_1 = new_bounds["long_total_wallet_exposure_limit"][1]
+        if "long_unstuck_close_pct" in new_bounds:
+            self.long_unstuck_close_pct_0 = new_bounds["long_unstuck_close_pct"][0]
+            self.long_unstuck_close_pct_1 = new_bounds["long_unstuck_close_pct"][1]
+        if "long_unstuck_ema_dist" in new_bounds:
+            self.long_unstuck_ema_dist_0 = new_bounds["long_unstuck_ema_dist"][0]
+            self.long_unstuck_ema_dist_1 = new_bounds["long_unstuck_ema_dist"][1]
+        if "long_unstuck_loss_allowance_pct" in new_bounds:
+            self.long_unstuck_loss_allowance_pct_0 = new_bounds["long_unstuck_loss_allowance_pct"][0]
+            self.long_unstuck_loss_allowance_pct_1 = new_bounds["long_unstuck_loss_allowance_pct"][1]
+        if "long_unstuck_threshold" in new_bounds:
+            self.long_unstuck_threshold_0 = new_bounds["long_unstuck_threshold"][0]
+            self.long_unstuck_threshold_1 = new_bounds["long_unstuck_threshold"][1]
+    
+        # Short parameters
+        # if "short_close_grid_markup_range" in new_bounds:
+        #     self.short_close_grid_markup_range_0 = new_bounds["short_close_grid_markup_range"][0]
+        #     self.short_close_grid_markup_range_1 = new_bounds["short_close_grid_markup_range"][1]
+        # if "short_close_grid_min_markup" in new_bounds:
+        #     self.short_close_grid_min_markup_0 = new_bounds["short_close_grid_min_markup"][0]
+        #     self.short_close_grid_min_markup_1 = new_bounds["short_close_grid_min_markup"][1]
+        if "short_close_grid_markup_end" in new_bounds:
+            self.short_close_grid_markup_end_0 = new_bounds["short_close_grid_markup_end"][0]
+            self.short_close_grid_markup_end_1 = new_bounds["short_close_grid_markup_end"][1]
+        if "short_close_grid_markup_start" in new_bounds:
+            self.short_close_grid_markup_start_0 = new_bounds["short_close_grid_markup_start"][0]
+            self.short_close_grid_markup_start_1 = new_bounds["short_close_grid_markup_start"][1]
+        if "short_close_grid_qty_pct" in new_bounds:
+            self.short_close_grid_qty_pct_0 = new_bounds["short_close_grid_qty_pct"][0]
+            self.short_close_grid_qty_pct_1 = new_bounds["short_close_grid_qty_pct"][1]
+        if "short_close_trailing_grid_ratio" in new_bounds:
+            self.short_close_trailing_grid_ratio_0 = new_bounds["short_close_trailing_grid_ratio"][0]
+            self.short_close_trailing_grid_ratio_1 = new_bounds["short_close_trailing_grid_ratio"][1]
+        if "short_close_trailing_qty_pct" in new_bounds:
+            self.short_close_trailing_qty_pct_0 = new_bounds["short_close_trailing_qty_pct"][0]
+            self.short_close_trailing_qty_pct_1 = new_bounds["short_close_trailing_qty_pct"][1]
+        if "short_close_trailing_retracement_pct" in new_bounds:
+            self.short_close_trailing_retracement_pct_0 = new_bounds["short_close_trailing_retracement_pct"][0]
+            self.short_close_trailing_retracement_pct_1 = new_bounds["short_close_trailing_retracement_pct"][1]
+        if "short_close_trailing_threshold_pct" in new_bounds:
+            self.short_close_trailing_threshold_pct_0 = new_bounds["short_close_trailing_threshold_pct"][0]
+            self.short_close_trailing_threshold_pct_1 = new_bounds["short_close_trailing_threshold_pct"][1]
+        if "short_ema_span_0" in new_bounds:
+            self.short_ema_span_0_0 = new_bounds["short_ema_span_0"][0]
+            self.short_ema_span_0_1 = new_bounds["short_ema_span_0"][1]
+        if "short_ema_span_1" in new_bounds:
+            self.short_ema_span_1_0 = new_bounds["short_ema_span_1"][0]
+            self.short_ema_span_1_1 = new_bounds["short_ema_span_1"][1]
+        if "short_entry_grid_double_down_factor" in new_bounds:
+            self.short_entry_grid_double_down_factor_0 = new_bounds["short_entry_grid_double_down_factor"][0]
+            self.short_entry_grid_double_down_factor_1 = new_bounds["short_entry_grid_double_down_factor"][1]
+        if "short_entry_grid_spacing_log_span_hours" in new_bounds:
+            self.short_entry_grid_spacing_log_span_hours_0 = new_bounds["short_entry_grid_spacing_log_span_hours"][0]
+            self.short_entry_grid_spacing_log_span_hours_1 = new_bounds["short_entry_grid_spacing_log_span_hours"][1]
+        if "short_entry_grid_spacing_log_weight" in new_bounds:
+            self.short_entry_grid_spacing_log_weight_0 = new_bounds["short_entry_grid_spacing_log_weight"][0]
+            self.short_entry_grid_spacing_log_weight_1 = new_bounds["short_entry_grid_spacing_log_weight"][1]
+        if "short_entry_grid_spacing_pct" in new_bounds:
+            self.short_entry_grid_spacing_pct_0 = new_bounds["short_entry_grid_spacing_pct"][0]
+            self.short_entry_grid_spacing_pct_1 = new_bounds["short_entry_grid_spacing_pct"][1]
+        if "short_entry_grid_spacing_we_weight" in new_bounds:
+            self.short_entry_grid_spacing_we_weight_0 = new_bounds["short_entry_grid_spacing_we_weight"][0]
+            self.short_entry_grid_spacing_we_weight_1 = new_bounds["short_entry_grid_spacing_we_weight"][1]
+        if "short_entry_initial_ema_dist" in new_bounds:
+            self.short_entry_initial_ema_dist_0 = new_bounds["short_entry_initial_ema_dist"][0]
+            self.short_entry_initial_ema_dist_1 = new_bounds["short_entry_initial_ema_dist"][1]
+        if "short_entry_initial_qty_pct" in new_bounds:
+            self.short_entry_initial_qty_pct_0 = new_bounds["short_entry_initial_qty_pct"][0]
+            self.short_entry_initial_qty_pct_1 = new_bounds["short_entry_initial_qty_pct"][1]
+        if "short_entry_trailing_double_down_factor" in new_bounds:
+            self.short_entry_trailing_double_down_factor_0 = new_bounds["short_entry_trailing_double_down_factor"][0]
+            self.short_entry_trailing_double_down_factor_1 = new_bounds["short_entry_trailing_double_down_factor"][1]
+        if "short_entry_trailing_grid_ratio" in new_bounds:
+            self.short_entry_trailing_grid_ratio_0 = new_bounds["short_entry_trailing_grid_ratio"][0]
+            self.short_entry_trailing_grid_ratio_1 = new_bounds["short_entry_trailing_grid_ratio"][1]
+        if "short_entry_trailing_retracement_pct" in new_bounds:
+            self.short_entry_trailing_retracement_pct_0 = new_bounds["short_entry_trailing_retracement_pct"][0]
+            self.short_entry_trailing_retracement_pct_1 = new_bounds["short_entry_trailing_retracement_pct"][1]
+        if "short_entry_trailing_threshold_pct" in new_bounds:
+            self.short_entry_trailing_threshold_pct_0 = new_bounds["short_entry_trailing_threshold_pct"][0]
+            self.short_entry_trailing_threshold_pct_1 = new_bounds["short_entry_trailing_threshold_pct"][1]
+        if "short_filter_log_range_ema_span" in new_bounds:
+            self.short_filter_log_range_ema_span_0 = new_bounds["short_filter_log_range_ema_span"][0]
+            self.short_filter_log_range_ema_span_1 = new_bounds["short_filter_log_range_ema_span"][1]
+        # Fix for old configs
+        elif "short_filter_noisiness_rolling_window" in new_bounds:
+            self.short_filter_log_range_ema_span_0 = new_bounds["short_filter_noisiness_rolling_window"][0]
+            self.short_filter_log_range_ema_span_1 = new_bounds["short_filter_noisiness_rolling_window"][1]
+        elif "short_filter_rolling_window" in new_bounds:
+            self.short_filter_log_range_ema_span_0 = new_bounds["short_filter_rolling_window"][0]
+            self.short_filter_log_range_ema_span_1 = new_bounds["short_filter_rolling_window"][1]
+        if "short_filter_volume_drop_pct" in new_bounds:
+            self.short_filter_volume_drop_pct_0 = new_bounds["short_filter_volume_drop_pct"][0]
+            self.short_filter_volume_drop_pct_1 = new_bounds["short_filter_volume_drop_pct"][1]
+        # Fix for old configs
+        elif "short_filter_relative_volume_clip_pct" in new_bounds:
+            self.short_filter_volume_drop_pct_0 = new_bounds["short_filter_relative_volume_clip_pct"][0]
+            self.short_filter_volume_drop_pct_1 = new_bounds["short_filter_relative_volume_clip_pct"][1]
+        if "short_filter_volume_ema_span" in new_bounds:
+            self.short_filter_volume_ema_span_0 = new_bounds["short_filter_volume_ema_span"][0]
+            self.short_filter_volume_ema_span_1 = new_bounds["short_filter_volume_ema_span"][1]
+        # Fix for old configs
+        elif "short_filter_rolling_window" in new_bounds:
+            self.short_filter_volume_ema_span_0 = new_bounds["short_filter_rolling_window"][0]
+            self.short_filter_volume_ema_span_1 = new_bounds["short_filter_rolling_window"][1]
+        if "short_n_positions" in new_bounds:
+            self.short_n_positions_0 = new_bounds["short_n_positions"][0]
+            self.short_n_positions_1 = new_bounds["short_n_positions"][1]
+        if "short_total_wallet_exposure_limit" in new_bounds:
+            self.short_total_wallet_exposure_limit_0 = new_bounds["short_total_wallet_exposure_limit"][0]
+            self.short_total_wallet_exposure_limit_1 = new_bounds["short_total_wallet_exposure_limit"][1]
+        if "short_unstuck_close_pct" in new_bounds:
+            self.short_unstuck_close_pct_0 = new_bounds["short_unstuck_close_pct"][0]
+            self.short_unstuck_close_pct_1 = new_bounds["short_unstuck_close_pct"][1]
+        if "short_unstuck_ema_dist" in new_bounds:
+            self.short_unstuck_ema_dist_0 = new_bounds["short_unstuck_ema_dist"][0]
+            self.short_unstuck_ema_dist_1 = new_bounds["short_unstuck_ema_dist"][1]
+        if "short_unstuck_loss_allowance_pct" in new_bounds:
+            self.short_unstuck_loss_allowance_pct_0 = new_bounds["short_unstuck_loss_allowance_pct"][0]
+            self.short_unstuck_loss_allowance_pct_1 = new_bounds["short_unstuck_loss_allowance_pct"][1]
+        if "short_unstuck_threshold" in new_bounds:
+            self.short_unstuck_threshold_0 = new_bounds["short_unstuck_threshold"][0]
+            self.short_unstuck_threshold_1 = new_bounds["short_unstuck_threshold"][1]

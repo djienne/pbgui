@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\".\\venv_pbgui\\Scripts\\python.exe\" -c \"from pbgui_purefunc import load_ini, save_ini; print(''Import successful!'')\")",
+      "Bash(timeout 10:*)",
+      "Bash(\".\\venv_pbgui\\Scripts\\python.exe\" -c \"import pbgui_func; print(''pbgui_func imported successfully'')\")",
+      "Bash(\".\\venv_pbgui\\Scripts\\python.exe\" -c \"import pbgui; print(''pbgui.py imported successfully'')\")",
+      "Bash(cat:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfix: add Windows compatibility for file locking and set default password\n\n- Replace Unix-only fcntl with cross-platform file locking\n- Add msvcrt support for Windows file locking\n- Set default password to \"a\" in secrets.toml\n- Track secrets.toml in git for simplified deployment\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push)",
+      "Bash(\".\\venv_pbgui\\Scripts\\python.exe\":*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfix: disable file locking on Windows to prevent pbgui.ini reset issues\n\n- Remove msvcrt file locking on Windows (caused file access problems)\n- Keep fcntl file locking on Unix/Linux (works reliably)\n- Windows is single-user desktop app, strict locking not needed\n- Prevents pbgui.ini from being reset/corrupted on Windows\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(\".\\venv_pbgui\\Scripts\\pip.exe\" install portalocker)",
+      "Bash(\".\\venv_pbgui\\Scripts\\python.exe\" -c:*)",
+      "Bash(\".\\venv_pbgui\\Scripts\\python.exe\" -c \"import pbgui_func; import pbgui; print(''Main modules imported successfully with portalocker!'')\")",
+      "Bash(git commit:*)",
+      "Bash(copy:*)",
+      "Bash(\".\\venv_pbgui\\Scripts\\python.exe\" -c \"import PBData; print(''PBData.py imported successfully'')\")",
+      "Bash(\".\\venv_pbgui\\Scripts\\python.exe\" -c \"import BacktestMulti; print(''BacktestMulti.py imported successfully'')\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

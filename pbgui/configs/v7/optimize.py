@@ -1,0 +1,205 @@
+import multiprocessing
+from .bounds import Bounds
+
+class Optimize:
+    def __init__(self):
+        self._bounds = Bounds()
+        self._limits = {}
+        # optimize
+        self._compress_results_file = True
+        self._crossover_probability = 0.7
+        self._crossover_eta = 20.0
+        self._enable_overrides = []
+        self._iters = 100000
+        self._mutation_probability = 0.2  # Changed from 0.45 to ensure sum with crossover <= 1.0
+        self._mutation_eta = 20.0
+        self._mutation_indpb = 0.0
+        self._n_cpus = 5
+        self._offspring_multiplier = 1.0
+        self._population_size = 1000
+        self._round_to_n_significant_digits = 5
+        # scoring
+        self._scoring = ["loss_profit_ratio", "mdg_w", "sharpe_ratio"]
+        self._write_all_results = True
+
+        self._optimize = {
+            "bounds": self._bounds._bounds,
+            "compress_results_file": self._compress_results_file,
+            "crossover_probability": self._crossover_probability,
+            "crossover_eta": self._crossover_eta,
+            "enable_overrides": self._enable_overrides,
+            "iters": self._iters,
+            "limits": self._limits,
+            "mutation_probability": self._mutation_probability,
+            "mutation_eta": self._mutation_eta,
+            "mutation_indpb": self._mutation_indpb,
+            "n_cpus": self._n_cpus,
+            "offspring_multiplier": self._offspring_multiplier,
+            "population_size": self._population_size,
+            "round_to_n_significant_digits": self._round_to_n_significant_digits,
+            "scoring": self._scoring,
+            "write_all_results": self._write_all_results
+        }
+    
+    def __repr__(self):
+        return str(self._optimize)
+
+    @property
+    def optimize(self): return self._optimize
+    @optimize.setter
+    def optimize(self, new_optimize):
+        if "bounds" in new_optimize:
+            self.bounds = new_optimize["bounds"]
+        if "compress_results_file" in new_optimize:
+            self.compress_results_file = new_optimize["compress_results_file"]
+        if "crossover_probability" in new_optimize:
+            self.crossover_probability = new_optimize["crossover_probability"]
+        if "crossover_eta" in new_optimize:
+            self.crossover_eta = new_optimize["crossover_eta"]
+        if "enable_overrides" in new_optimize:
+            self.enable_overrides = new_optimize["enable_overrides"]
+        if "iters" in new_optimize:
+            self.iters = new_optimize["iters"]
+        if "limits" in new_optimize:
+            self.limits = new_optimize["limits"]
+        if "mutation_probability" in new_optimize:
+            self.mutation_probability = new_optimize["mutation_probability"]
+        if "mutation_eta" in new_optimize:
+            self.mutation_eta = new_optimize["mutation_eta"]
+        if "mutation_indpb" in new_optimize:
+            self.mutation_indpb = new_optimize["mutation_indpb"]
+        if "n_cpus" in new_optimize:
+            self.n_cpus = new_optimize["n_cpus"]
+        if "offspring_multiplier" in new_optimize:
+            self.offspring_multiplier = new_optimize["offspring_multiplier"]
+        if "population_size" in new_optimize:
+            self.population_size = new_optimize["population_size"]
+        if "round_to_n_significant_digits" in new_optimize:
+            self.round_to_n_significant_digits = new_optimize["round_to_n_significant_digits"]
+        if "scoring" in new_optimize:
+            self.scoring = new_optimize["scoring"]
+        if "write_all_results" in new_optimize:
+            self.write_all_results = new_optimize["write_all_results"]
+
+    @property
+    def bounds(self): return self._bounds
+    @property
+    def compress_results_file(self): return self._compress_results_file
+    @property
+    def limits(self): return self._limits
+    @property
+    def crossover_probability(self): return self._crossover_probability
+    @property
+    def crossover_eta(self): return self._crossover_eta
+    @property
+    def enable_overrides(self): return self._enable_overrides
+    @property
+    def iters(self): return self._iters
+    @property
+    def mutation_probability(self): return self._mutation_probability
+    @property
+    def mutation_eta(self): return self._mutation_eta
+    @property
+    def mutation_indpb(self): return self._mutation_indpb
+    @property
+    def n_cpus(self):
+        if self._n_cpus > multiprocessing.cpu_count():
+            self.n_cpus = multiprocessing.cpu_count()
+        return self._n_cpus
+    @property
+    def offspring_multiplier(self): return self._offspring_multiplier
+    @property
+    def population_size(self): return self._population_size
+    @property
+    def round_to_n_significant_digits(self): return self._round_to_n_significant_digits
+    @property
+    def scoring(self): return self._scoring
+    @property
+    def write_all_results(self): return self._write_all_results
+
+    @bounds.setter
+    def bounds(self, new_bounds):
+        self._bounds.bounds = new_bounds
+        self._optimize["bounds"] = self._bounds.bounds
+    @compress_results_file.setter
+    def compress_results_file(self, new_compress_results_file):
+        self._compress_results_file = new_compress_results_file
+        self._optimize["compress_results_file"] = self._compress_results_file
+    @limits.setter
+    def limits(self, new_limits):
+        self._limits = new_limits
+        self._optimize["limits"] = self._limits
+    @crossover_probability.setter
+    def crossover_probability(self, new_crossover_probability):
+        # Clamp to valid range [0.0, 1.0]
+        new_crossover_probability = max(0.0, min(1.0, new_crossover_probability))
+
+        # Validate that sum with mutation_probability doesn't exceed 1.0
+        if new_crossover_probability + self._mutation_probability > 1.0:
+            # Adjust mutation_probability to maintain valid sum
+            self._mutation_probability = max(0.0, 1.0 - new_crossover_probability)
+            self._optimize["mutation_probability"] = self._mutation_probability
+            print(f"Warning: Adjusted mutation_probability to {self._mutation_probability:.3f} to ensure sum with crossover_probability <= 1.0")
+
+        self._crossover_probability = new_crossover_probability
+        self._optimize["crossover_probability"] = self._crossover_probability
+    @crossover_eta.setter
+    def crossover_eta(self, new_crossover_eta):
+        self._crossover_eta = new_crossover_eta
+        self._optimize["crossover_eta"] = self._crossover_eta
+    @enable_overrides.setter
+    def enable_overrides(self, new_enable_overrides):
+        self._enable_overrides = new_enable_overrides
+        self._optimize["enable_overrides"] = self._enable_overrides
+    @iters.setter
+    def iters(self, new_iters):
+        self._iters = new_iters
+        self._optimize["iters"] = self._iters
+    @mutation_probability.setter
+    def mutation_probability(self, new_mutation_probability):
+        # Clamp to valid range [0.0, 1.0]
+        new_mutation_probability = max(0.0, min(1.0, new_mutation_probability))
+
+        # Validate that sum with crossover_probability doesn't exceed 1.0
+        if self._crossover_probability + new_mutation_probability > 1.0:
+            # Adjust crossover_probability to maintain valid sum
+            self._crossover_probability = max(0.0, 1.0 - new_mutation_probability)
+            self._optimize["crossover_probability"] = self._crossover_probability
+            print(f"Warning: Adjusted crossover_probability to {self._crossover_probability:.3f} to ensure sum with mutation_probability <= 1.0")
+
+        self._mutation_probability = new_mutation_probability
+        self._optimize["mutation_probability"] = self._mutation_probability
+    @mutation_eta.setter
+    def mutation_eta(self, new_mutation_eta):
+        self._mutation_eta = new_mutation_eta
+        self._optimize["mutation_eta"] = self._mutation_eta
+    @mutation_indpb.setter
+    def mutation_indpb(self, new_mutation_indpb):
+        self._mutation_indpb = new_mutation_indpb
+        self._optimize["mutation_indpb"] = self._mutation_indpb
+    @n_cpus.setter
+    def n_cpus(self, new_n_cpus):
+        self._n_cpus = new_n_cpus
+        self._optimize["n_cpus"] = self._n_cpus
+        if self._n_cpus > multiprocessing.cpu_count():
+            self.n_cpus = multiprocessing.cpu_count()
+    @offspring_multiplier.setter
+    def offspring_multiplier(self, new_offspring_multiplier):
+        self._offspring_multiplier = new_offspring_multiplier
+        self._optimize["offspring_multiplier"] = self._offspring_multiplier
+    @population_size.setter
+    def population_size(self, new_population_size):
+        self._population_size = new_population_size
+        self._optimize["population_size"] = self._population_size
+    @round_to_n_significant_digits.setter
+    def round_to_n_significant_digits(self, new_round_to_n_significant_digits):
+        self._round_to_n_significant_digits = new_round_to_n_significant_digits
+        self._optimize["round_to_n_significant_digits"] = self._round_to_n_significant_digits
+    @scoring.setter
+    def scoring(self, new_scoring):
+        self._scoring = new_scoring
+        self._optimize["scoring"] = self._scoring
+    @write_all_results.setter
+    def write_all_results(self, new_write_all_results):
+        self._write_all_results = new_write_all_results
+        self._optimize["write_all_results"] = self._write_all_results
