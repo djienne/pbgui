@@ -37,14 +37,20 @@ class BalanceCalculator:
     def init_coindata(self):
         if "pbcoindata" not in st.session_state:
             st.session_state.pbcoindata = CoinData()
-        st.session_state.pbcoindata.exchange = self.exchange.id
+        pbcoindata = st.session_state.pbcoindata
+        pbcoindata.exchange = self.exchange.id
+        # Refresh the cached CoinData selection so approved/ignored lists are up to date
+        pbcoindata.list_symbols()
         if self.config.pbgui.dynamic_ignore:
-            st.session_state.pbcoindata.tags = self.config.pbgui.tags
-            st.session_state.pbcoindata.only_cpt = self.config.pbgui.only_cpt
-            st.session_state.pbcoindata.market_cap = self.config.pbgui.market_cap
-            st.session_state.pbcoindata.vol_mcap = self.config.pbgui.vol_mcap
-            st.session_state.pbcoindata.notices_ignore = self.config.pbgui.notices_ignore
-            self.config.live.approved_coins = st.session_state.pbcoindata.approved_coins
+            pbcoindata.tags = self.config.pbgui.tags
+            pbcoindata.only_cpt = self.config.pbgui.only_cpt
+            pbcoindata.market_cap = self.config.pbgui.market_cap
+            pbcoindata.vol_mcap = self.config.pbgui.vol_mcap
+            pbcoindata.notices_ignore = self.config.pbgui.notices_ignore
+            self.config.live.approved_coins = pbcoindata.approved_coins
+        elif not (self.config.live.approved_coins.long or self.config.live.approved_coins.short):
+            # Fall back to CoinData's current approval list if the config has none
+            self.config.live.approved_coins = pbcoindata.approved_coins
 
     def view(self):
         # Init coindata
@@ -63,7 +69,6 @@ class BalanceCalculator:
         if "bc_exchange_id" in st.session_state:
             if st.session_state.bc_exchange_id != self.exchange.id:
                 self.exchange = Exchange(st.session_state.bc_exchange_id, None)
-                # st.session_state.bc_exchange = bc_exchange
         else:
             if self.config.backtest.exchanges:
                 st.session_state.bc_exchange_id = self.config.backtest.exchanges[0]
@@ -77,6 +82,9 @@ class BalanceCalculator:
             st.selectbox("Exchange", V7.list(), key="bc_exchange_id")
             if st.button("Calculate"):
                 coins = set(self.config.live.approved_coins.long + self.config.live.approved_coins.short)
+                if not coins:
+                    st.info("No approved coins available. Paste a config or configure Coin Data to populate the list.")
+                    return
                 self.coin_infos = []
                 self.balance_long = []
                 self.balance_short = []
