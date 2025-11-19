@@ -159,5 +159,6 @@ class BalanceCalculator:
             st.write(f"**Formula:** `min_order_price / ((total_wallet_exposure_limit / n_positions) * entry_initial_qty_pct)`")
             result = min_order_price / ((bot_side.total_wallet_exposure_limit / bot_side.n_positions) * bot_side.entry_initial_qty_pct)
             st.write(f"**Calculation:** `{min_order_price} / (({bot_side.total_wallet_exposure_limit} / {bot_side.n_positions}) * {bot_side.entry_initial_qty_pct}) = {result:.2f}`")
-            recommended_balance = math.ceil(result * 1.1 / 10) * 10
+            # Add 10% buffer and round up to nearest 10 (fix floating-point precision issues)
+            recommended_balance = math.ceil(round(result * 1.1, 2) / 10) * 10
             st.write(f"### Recommended Balance (10% more): :green[{int(recommended_balance)} USDT]")
