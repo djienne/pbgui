@@ -271,7 +271,11 @@ class BaseExchange:
         if not self.instance:
             self.connect()
             self._markets = self.instance.load_markets()
-        
+
+        # Convert from passivbot format (e.g., "SOLUSDT") to CCXT format (e.g., "SOL/USDT:USDT")
+        if symbol.endswith('USDT') and '/' not in symbol:
+            symbol = f'{symbol[0:-4]}/USDT:USDT'
+
         if not self._markets:
             try:
                 self._markets = self.instance.load_markets()
