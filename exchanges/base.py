@@ -289,22 +289,32 @@ class BaseExchange:
             lev = "unknown"
         else:
             lev = symbol_info["limits"]["leverage"]["max"]
-        contractSize = symbol_info["contractSize"]
-        if symbol_info["limits"]["amount"]["min"]:
-            min_amount = symbol_info["limits"]["amount"]["min"]
-        elif symbol_info["precision"]["amount"]:
+
+        # Get contract size with fallback
+        contractSize = symbol_info.get("contractSize", 1.0)
+        if contractSize is None:
+            contractSize = 1.0
+
+        # Get min_amount with proper null handling
+        min_amount = symbol_info["limits"]["amount"]["min"]
+        if min_amount is None:
             min_amount = symbol_info["precision"]["amount"]
-            
+        if min_amount is None:
+            min_amount = 0.001  # Fallback default
+
         min_qty = min_amount * contractSize
         price = self.fetch_price(symbol, "swap")['last']
         min_price = min_qty * price
-        
-        if symbol_info["limits"]["cost"]["min"]:
-            min_cost = symbol_info["limits"]["cost"]["min"]
-        else:
-            min_cost = 0.0
+
+        # Get min_cost with proper default (exchanges typically require 1-5 USDT minimum)
+        min_cost = symbol_info["limits"]["cost"]["min"]
+        if min_cost is None:
+            min_cost = 1.0  # Default minimum cost in USDT
+
+        # Ensure min_price meets the exchange's minimum cost requirement
         if min_cost > min_price:
             min_price = min_cost
+
         return min_price, price, contractSize, min_amount, min_cost, lev
 
     def calculate_balance_needed(self, symbols: list, twe: float, entry_initial_qty_pct: float):
