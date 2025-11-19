@@ -8,6 +8,35 @@ from time import sleep
 from datetime import datetime
 from pbgui_purefunc import PBGDIR, save_ini_batch
 
+def is_ascii_symbol(symbol: str) -> bool:
+    """
+    Check if a symbol contains only ASCII characters (Latin alphabet, numbers, punctuation).
+    Returns False for symbols with Chinese, Cyrillic, or other non-Latin characters.
+    """
+    try:
+        symbol.encode('ascii')
+        return True
+    except UnicodeEncodeError:
+        return False
+
+def filter_ascii_symbols(symbols: list) -> list:
+    """
+    Filter a list of symbols to include only those with ASCII characters.
+    Logs and discards any symbols with non-ASCII characters.
+    """
+    filtered = []
+    discarded = []
+    for symbol in symbols:
+        if is_ascii_symbol(symbol):
+            filtered.append(symbol)
+        else:
+            discarded.append(symbol)
+
+    if discarded:
+        print(f'WARNING: Discarded {len(discarded)} non-ASCII symbols: {discarded}')
+
+    return filtered
+
 class Exchanges(Enum):
     BINANCE = 'binance'
     BYBIT = 'bybit'
@@ -980,6 +1009,14 @@ class Exchange:
                     self.cpt = cpt_result
             except Exception as e:
                 print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Warning: Could not fetch copytrading symbols for {self.id}: {type(e).__name__}: {str(e)}')
+
+        # Filter out non-ASCII symbols before saving
+        print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: [{self.id}] Filtering non-ASCII symbols...')
+        self.spot = filter_ascii_symbols(self.spot)
+        self.swap = filter_ascii_symbols(self.swap)
+        if self.cpt:
+            self.cpt = filter_ascii_symbols(self.cpt)
+
         self.spot.sort()
         self.swap.sort()
         if self.cpt:
@@ -1012,8 +1049,12 @@ class Exchange:
         pb_config.read('pbgui.ini', encoding='utf-8')
         if pb_config.has_option("exchanges", f'{self.id}.spot'):
             self.spot = eval(pb_config.get("exchanges", f'{self.id}.spot'))
+            # Filter out non-ASCII symbols when loading from file
+            self.spot = filter_ascii_symbols(self.spot)
         if pb_config.has_option("exchanges", f'{self.id}.swap'):
             self.swap = eval(pb_config.get("exchanges", f'{self.id}.swap'))
+            # Filter out non-ASCII symbols when loading from file
+            self.swap = filter_ascii_symbols(self.swap)
         if not self.spot and not self.swap:
             self.fetch_symbols()
     
