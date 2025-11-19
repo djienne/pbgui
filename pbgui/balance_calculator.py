@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import math
+from decimal import Decimal, ROUND_UP
 from time import sleep
 from .configs.v7.config import ConfigV7
 
@@ -104,19 +105,31 @@ class BalanceCalculator:
                             })
                             if coin in self.config.live.approved_coins.long:
                                 if self.config.bot.long.n_positions > 0 and self.config.bot.long.total_wallet_exposure_limit > 0:
-                                    we = self.config.bot.long.total_wallet_exposure_limit / self.config.bot.long.n_positions
-                                    balance = min_order_price / (we * self.config.bot.long.entry_initial_qty_pct)
+                                    # Use Decimal for precise financial calculations
+                                    twe = Decimal(str(self.config.bot.long.total_wallet_exposure_limit))
+                                    n_pos = Decimal(str(self.config.bot.long.n_positions))
+                                    entry_pct = Decimal(str(self.config.bot.long.entry_initial_qty_pct))
+                                    min_price = Decimal(str(min_order_price))
+
+                                    we = twe / n_pos
+                                    balance = min_price / (we * entry_pct)
                                     self.balance_long.append({
                                         "coin": coin,
-                                        "balance": balance
+                                        "balance": float(balance)
                                     })
                             if coin in self.config.live.approved_coins.short:
                                 if self.config.bot.short.n_positions > 0 and self.config.bot.short.total_wallet_exposure_limit > 0:
-                                    we = self.config.bot.short.total_wallet_exposure_limit / self.config.bot.short.n_positions
-                                    balance = min_order_price / (we * self.config.bot.short.entry_initial_qty_pct)
+                                    # Use Decimal for precise financial calculations
+                                    twe = Decimal(str(self.config.bot.short.total_wallet_exposure_limit))
+                                    n_pos = Decimal(str(self.config.bot.short.n_positions))
+                                    entry_pct = Decimal(str(self.config.bot.short.entry_initial_qty_pct))
+                                    min_price = Decimal(str(min_order_price))
+
+                                    we = twe / n_pos
+                                    balance = min_price / (we * entry_pct)
                                     self.balance_short.append({
                                         "coin": coin,
-                                        "balance": balance
+                                        "balance": float(balance)
                                     })
                             sleep(0.1)  # to avoid rate limit issues
 
@@ -157,8 +170,17 @@ class BalanceCalculator:
             st.write(f"**Entry Initial Quantity Percentage:** `{bot_side.entry_initial_qty_pct:.2f}`")
             st.write(f"To calculate the balance needed for {symbol} on the {side} side, use the formula:")
             st.write(f"**Formula:** `min_order_price / ((total_wallet_exposure_limit / n_positions) * entry_initial_qty_pct)`")
-            result = min_order_price / ((bot_side.total_wallet_exposure_limit / bot_side.n_positions) * bot_side.entry_initial_qty_pct)
-            st.write(f"**Calculation:** `{min_order_price} / (({bot_side.total_wallet_exposure_limit} / {bot_side.n_positions}) * {bot_side.entry_initial_qty_pct}) = {result:.2f}`")
-            # Add 10% buffer and round up to nearest 10 (fix floating-point precision issues)
-            recommended_balance = math.ceil(round(result * 1.1, 2) / 10) * 10
-            st.write(f"### Recommended Balance (10% more): :green[{int(recommended_balance)} USDT]")
+            # Use Decimal for precise financial calculations
+            twe = Decimal(str(bot_side.total_wallet_exposure_limit))
+            n_pos = Decimal(str(bot_side.n_positions))
+            entry_pct = Decimal(str(bot_side.entry_initial_qty_pct))
+            min_price = Decimal(str(min_order_price))
+
+            result = min_price / ((twe / n_pos) * entry_pct)
+            st.write(f"**Calculation:** `{min_order_price} / (({bot_side.total_wallet_exposure_limit} / {bot_side.n_positions}) * {bot_side.entry_initial_qty_pct}) = {float(result):.2f}`")
+
+            # Add 10% buffer and round up to nearest 10 using Decimal arithmetic
+            result_with_buffer = result * Decimal('1.1')
+            # Round up to nearest 10
+            recommended = (result_with_buffer / Decimal('10')).quantize(Decimal('1'), rounding=ROUND_UP) * Decimal('10')
+            st.write(f"### Recommended Balance (10% more): :green[{int(recommended)} USDT]")
