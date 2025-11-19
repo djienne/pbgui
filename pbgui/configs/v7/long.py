@@ -219,3 +219,132 @@ class Long:
     def unstuck_loss_allowance_pct(self): return self._unstuck_loss_allowance_pct
     @property
     def unstuck_threshold(self): return self._unstuck_threshold
+
+    @close_grid_markup_end.setter
+    def close_grid_markup_end(self, new_close_grid_markup_end):
+        self._close_grid_markup_end = new_close_grid_markup_end
+        self._long["close_grid_markup_end"] = self._close_grid_markup_end
+    @close_grid_markup_start.setter
+    def close_grid_markup_start(self, new_close_grid_markup_start):
+        self._close_grid_markup_start = new_close_grid_markup_start
+        self._long["close_grid_markup_start"] = self._close_grid_markup_start
+    # @close_grid_markup_range.setter
+    # def close_grid_markup_range(self, new_close_grid_markup_range):
+    #     self._close_grid_markup_range = new_close_grid_markup_range
+    #     self._long["close_grid_markup_range"] = self._close_grid_markup_range
+    # @close_grid_min_markup.setter
+    # def close_grid_min_markup(self, new_close_grid_min_markup):
+    #     self._close_grid_min_markup = new_close_grid_min_markup
+    #     self._long["close_grid_min_markup"] = self._close_grid_min_markup
+    @close_grid_qty_pct.setter
+    def close_grid_qty_pct(self, new_close_grid_qty_pct):
+        self._close_grid_qty_pct = new_close_grid_qty_pct
+        self._long["close_grid_qty_pct"] = self._close_grid_qty_pct
+    @close_trailing_grid_ratio.setter
+    def close_trailing_grid_ratio(self, new_close_trailing_grid_ratio):
+        self._close_trailing_grid_ratio = new_close_trailing_grid_ratio
+        self._long["close_trailing_grid_ratio"] = self._close_trailing_grid_ratio
+    @close_trailing_qty_pct.setter
+    def close_trailing_qty_pct(self, new_close_trailing_qty_pct):
+        self._close_trailing_qty_pct = new_close_trailing_qty_pct
+        self._long["close_trailing_qty_pct"] = self._close_trailing_qty_pct
+    @close_trailing_retracement_pct.setter
+    def close_trailing_retracement_pct(self, new_close_trailing_retracement_pct):
+        self._close_trailing_retracement_pct = new_close_trailing_retracement_pct
+        self._long["close_trailing_retracement_pct"] = self._close_trailing_retracement_pct
+    @close_trailing_threshold_pct.setter
+    def close_trailing_threshold_pct(self, new_close_trailing_threshold_pct):
+        self._close_trailing_threshold_pct = new_close_trailing_threshold_pct
+        self._long["close_trailing_threshold_pct"] = self._close_trailing_threshold_pct
+    @ema_span_0.setter
+    def ema_span_0(self, new_ema_span_0):
+        self._ema_span_0 = new_ema_span_0
+        self._long["ema_span_0"] = self._ema_span_0
+    @ema_span_1.setter
+    def ema_span_1(self, new_ema_span_1):
+        self._ema_span_1 = new_ema_span_1
+        self._long["ema_span_1"] = self._ema_span_1
+    @enforce_exposure_limit.setter
+    def enforce_exposure_limit(self, new_enforce_exposure_limit):
+        self._enforce_exposure_limit = new_enforce_exposure_limit
+        self._long["enforce_exposure_limit"] = self._enforce_exposure_limit
+    @entry_grid_double_down_factor.setter
+    def entry_grid_double_down_factor(self, new_entry_grid_double_down_factor):
+        self._entry_grid_double_down_factor = new_entry_grid_double_down_factor
+        self._long["entry_grid_double_down_factor"] = self._entry_grid_double_down_factor
+    @entry_grid_spacing_log_span_hours.setter
+    def entry_grid_spacing_log_span_hours(self, new_entry_grid_spacing_log_span_hours):
+        self._entry_grid_spacing_log_span_hours = new_entry_grid_spacing_log_span_hours
+        self._long["entry_grid_spacing_log_span_hours"] = self._entry_grid_spacing_log_span_hours
+    @entry_grid_spacing_log_weight.setter
+    def entry_grid_spacing_log_weight(self, new_entry_grid_spacing_log_weight):
+        self._entry_grid_spacing_log_weight = new_entry_grid_spacing_log_weight
+        self._long["entry_grid_spacing_log_weight"] = self._entry_grid_spacing_log_weight
+    @entry_grid_spacing_pct.setter
+    def entry_grid_spacing_pct(self, new_entry_grid_spacing_pct):
+        self._entry_grid_spacing_pct = new_entry_grid_spacing_pct
+        self._long["entry_grid_spacing_pct"] = self._entry_grid_spacing_pct
+    @entry_grid_spacing_we_weight.setter
+    def entry_grid_spacing_we_weight(self, new_entry_grid_spacing_we_weight):
+        self._entry_grid_spacing_we_weight = new_entry_grid_spacing_we_weight
+        self._long["entry_grid_spacing_we_weight"] = self._entry_grid_spacing_we_weight
+    @entry_initial_ema_dist.setter
+    def entry_initial_ema_dist(self, new_entry_initial_ema_dist):
+        self._entry_initial_ema_dist = new_entry_initial_ema_dist
+        self._long["entry_initial_ema_dist"] = self._entry_initial_ema_dist
+    @entry_initial_qty_pct.setter
+    def entry_initial_qty_pct(self, new_entry_initial_qty_pct):
+        self._entry_initial_qty_pct = new_entry_initial_qty_pct
+        self._long["entry_initial_qty_pct"] = self._entry_initial_qty_pct
+    @entry_trailing_double_down_factor.setter
+    def entry_trailing_double_down_factor(self, new_entry_trailing_double_down_factor):
+        self._entry_trailing_double_down_factor = new_entry_trailing_double_down_factor
+        self._long["entry_trailing_double_down_factor"] = self._entry_trailing_double_down_factor
+    @entry_trailing_grid_ratio.setter
+    def entry_trailing_grid_ratio(self, new_entry_trailing_grid_ratio):
+        self._entry_trailing_grid_ratio = new_entry_trailing_grid_ratio
+        self._long["entry_trailing_grid_ratio"] = self._entry_trailing_grid_ratio
+    @entry_trailing_retracement_pct.setter
+    def entry_trailing_retracement_pct(self, new_entry_trailing_retracement_pct):
+        self._entry_trailing_retracement_pct = new_entry_trailing_retracement_pct
+        self._long["entry_trailing_retracement_pct"] = self._entry_trailing_retracement_pct
+    @entry_trailing_threshold_pct.setter
+    def entry_trailing_threshold_pct(self, new_entry_trailing_threshold_pct):
+        self._entry_trailing_threshold_pct = new_entry_trailing_threshold_pct
+        self._long["entry_trailing_threshold_pct"] = self._entry_trailing_threshold_pct
+    @filter_log_range_ema_span.setter
+    def filter_log_range_ema_span(self, new_filter_log_range_ema_span):
+        self._filter_log_range_ema_span = new_filter_log_range_ema_span
+        self._long["filter_log_range_ema_span"] = self._filter_log_range_ema_span
+    @filter_volume_drop_pct.setter
+    def filter_volume_drop_pct(self, new_filter_volume_drop_pct):
+        self._filter_volume_drop_pct = new_filter_volume_drop_pct
+        self._long["filter_volume_drop_pct"] = self._filter_volume_drop_pct
+    @filter_volume_ema_span.setter
+    def filter_volume_ema_span(self, new_filter_volume_ema_span):
+        self._filter_volume_ema_span = new_filter_volume_ema_span
+        self._long["filter_volume_ema_span"] = self._filter_volume_ema_span
+    @n_positions.setter
+    def n_positions(self, new_n_positions):
+        self._n_positions = new_n_positions
+        self._long["n_positions"] = self._n_positions
+    @total_wallet_exposure_limit.setter
+    def total_wallet_exposure_limit(self, new_total_wallet_exposure_limit):
+        self._total_wallet_exposure_limit = new_total_wallet_exposure_limit
+        self._long["total_wallet_exposure_limit"] = self._total_wallet_exposure_limit
+    @unstuck_close_pct.setter
+    def unstuck_close_pct(self, new_unstuck_close_pct):
+        self._unstuck_close_pct = new_unstuck_close_pct
+        self._long["unstuck_close_pct"] = self._unstuck_close_pct
+    @unstuck_ema_dist.setter
+    def unstuck_ema_dist(self, new_unstuck_ema_dist):
+        self._unstuck_ema_dist = new_unstuck_ema_dist
+        self._long["unstuck_ema_dist"] = self._unstuck_ema_dist
+    @unstuck_loss_allowance_pct.setter
+    def unstuck_loss_allowance_pct(self, new_unstuck_loss_allowance_pct):
+        self._unstuck_loss_allowance_pct = new_unstuck_loss_allowance_pct
+        self._long["unstuck_loss_allowance_pct"] = self._unstuck_loss_allowance_pct
+    @unstuck_threshold.setter
+    def unstuck_threshold(self, new_unstuck_threshold):
+        self._unstuck_threshold = new_unstuck_threshold
+        self._long["unstuck_threshold"] = self._unstuck_threshold
