@@ -689,9 +689,39 @@ class OptimizeV7Results:
                     # run backtest on selected pareto
                     if selected_count == 1:
                         st.session_state.bt_v7 = BacktestV7.BacktestV7Item(backtest_name)
+                        # Fix for missing parameters
+                        opt_name = st.session_state.bt_v7.name
+                        opt_config_file = Path(f'{PBGDIR}/data/opt_v7/{opt_name}.json')
+                        if opt_config_file.exists():
+                            opt_config = ConfigV7(str(opt_config_file))
+                            opt_config.load_config()
+                            st.session_state.bt_v7.config.backtest.exchanges = opt_config.backtest.exchanges
+                            st.session_state.bt_v7.config.live.approved_coins = opt_config.live.approved_coins.approved_coins
+                            st.session_state.bt_v7.config.live.ignored_coins = opt_config.live.ignored_coins.ignored_coins
+                            st.session_state.bt_v7.config.backtest.combine_ohlcvs = opt_config.backtest.combine_ohlcvs
+                            st.session_state.bt_v7.config.backtest.compress_cache = opt_config.backtest.compress_cache
+                            st.session_state.bt_v7.config.backtest.gap_tolerance_ohlcvs_minutes = opt_config.backtest.gap_tolerance_ohlcvs_minutes
+                            st.session_state.bt_v7.config.backtest.max_warmup_minutes = opt_config.backtest.max_warmup_minutes
+                            st.session_state.bt_v7.config.backtest.use_btc_collateral = opt_config.backtest.use_btc_collateral
+                            st.session_state.bt_v7.config.save_config()
                         st.switch_page(get_navi_paths()["V7_BACKTEST"])
                     else:
                         bt_v7 = BacktestV7.BacktestV7Item(backtest_name)
+                        # Fix for missing parameters
+                        opt_name = bt_v7.name
+                        opt_config_file = Path(f'{PBGDIR}/data/opt_v7/{opt_name}.json')
+                        if opt_config_file.exists():
+                            opt_config = ConfigV7(str(opt_config_file))
+                            opt_config.load_config()
+                            bt_v7.config.backtest.exchanges = opt_config.backtest.exchanges
+                            bt_v7.config.live.approved_coins = opt_config.live.approved_coins.approved_coins
+                            bt_v7.config.live.ignored_coins = opt_config.live.ignored_coins.ignored_coins
+                            bt_v7.config.backtest.combine_ohlcvs = opt_config.backtest.combine_ohlcvs
+                            bt_v7.config.backtest.compress_cache = opt_config.backtest.compress_cache
+                            bt_v7.config.backtest.gap_tolerance_ohlcvs_minutes = opt_config.backtest.gap_tolerance_ohlcvs_minutes
+                            bt_v7.config.backtest.max_warmup_minutes = opt_config.backtest.max_warmup_minutes
+                            bt_v7.config.backtest.use_btc_collateral = opt_config.backtest.use_btc_collateral
+                            bt_v7.config.save_config()
                         bt_v7.save_queue()
         st.session_state.bt_v7_queue = BacktestV7.BacktestV7Queue()
         st.switch_page(get_navi_paths()["V7_BACKTEST"])
@@ -705,6 +735,21 @@ class OptimizeV7Results:
             backtest_name = d_paretos[row]["file"]
             # run backtest on selected pareto
             bt_v7 = BacktestV7.BacktestV7Item(backtest_name)
+            # Fix for missing parameters
+            opt_name = bt_v7.name
+            opt_config_file = Path(f'{PBGDIR}/data/opt_v7/{opt_name}.json')
+            if opt_config_file.exists():
+                opt_config = ConfigV7(str(opt_config_file))
+                opt_config.load_config()
+                bt_v7.config.backtest.exchanges = opt_config.backtest.exchanges
+                bt_v7.config.live.approved_coins = opt_config.live.approved_coins.approved_coins
+                bt_v7.config.live.ignored_coins = opt_config.live.ignored_coins.ignored_coins
+                bt_v7.config.backtest.combine_ohlcvs = opt_config.backtest.combine_ohlcvs
+                bt_v7.config.backtest.compress_cache = opt_config.backtest.compress_cache
+                bt_v7.config.backtest.gap_tolerance_ohlcvs_minutes = opt_config.backtest.gap_tolerance_ohlcvs_minutes
+                bt_v7.config.backtest.max_warmup_minutes = opt_config.backtest.max_warmup_minutes
+                bt_v7.config.backtest.use_btc_collateral = opt_config.backtest.use_btc_collateral
+                bt_v7.config.save_config()
             bt_v7.save_queue()
         if "bt_v7_results" in st.session_state:
             del st.session_state.bt_v7_results
