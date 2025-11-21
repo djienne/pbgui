@@ -20,6 +20,15 @@ try:
 except ImportError:
     from pbgui_func import error_popup
 
+@st.cache_resource
+def get_exchange_cached(exchange_id):
+    return Exchange(exchange_id, None)
+
+@st.cache_data(ttl=604800)
+def fetch_symbol_infos_cached(exchange_id, symbol):
+    exchange = get_exchange_cached(exchange_id)
+    return exchange.fetch_symbol_infos(symbol)
+
 class BalanceCalculator:
     def __init__(self, config_file: str = None):
         self.config = ConfigV7()
@@ -93,7 +102,7 @@ class BalanceCalculator:
                     with st.empty():
                         for counter, coin in enumerate(coins):
                             st.text(f'{counter + 1}/{len(coins)}: {coin}')
-                            min_order_price, price, contractSize, min_amount, min_cost, lev = self.exchange.fetch_symbol_infos(coin)
+                            min_order_price, price, contractSize, min_amount, min_cost, lev = fetch_symbol_infos_cached(self.exchange.id, coin)
                             self.coin_infos.append({
                                 "coin": coin,
                                 "currentPrice": price,
@@ -131,7 +140,7 @@ class BalanceCalculator:
                                         "coin": coin,
                                         "balance": float(balance)
                                     })
-                            sleep(0.1)  # to avoid rate limit issues
+                            # sleep(0.1)  # to avoid rate limit issues - Removed sleep as we are using cache and want speed
 
         # sort coin_infos by min_order_price
         self.coin_infos = sorted(self.coin_infos, key=lambda x: x['min_order_price'], reverse=True)
