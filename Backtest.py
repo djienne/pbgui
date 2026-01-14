@@ -3,6 +3,7 @@ from bokeh.plotting import figure
 from bokeh.palettes import Category20_20
 from bokeh.models import NumeralTickFormatter, HoverTool
 import json
+import ast
 import psutil
 import sys
 import platform
@@ -327,7 +328,7 @@ class BacktestQueue:
             })
             # Re-read the config after writing
             pb_config.read('pbgui.ini', encoding='utf-8')
-        self._autostart = eval(pb_config.get("backtest", "autostart"))
+        self._autostart = ast.literal_eval(pb_config.get("backtest", "autostart"))
         self._cpu = int(pb_config.get("backtest", "cpu"))
         if self._autostart:
             self.run()
@@ -527,7 +528,7 @@ class BacktestResults:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         if pb_config.has_option("backtest", "view_col"):
-            return eval(pb_config.get("backtest", "view_col"))
+            return ast.literal_eval(pb_config.get("backtest", "view_col"))
         return []
 
     def save_view_col(self):
@@ -940,7 +941,7 @@ def main():
                 time.sleep(5)
             pb_config = configparser.ConfigParser()
             pb_config.read('pbgui.ini', encoding='utf-8')
-            if not eval(pb_config.get("backtest", "autostart")):
+            if not ast.literal_eval(pb_config.get("backtest", "autostart")):
                 return
             if item.status() == "not started":
                 print(f'{datetime.datetime.now().isoformat(sep=" ", timespec="seconds")} Backtesting {item.file} started')

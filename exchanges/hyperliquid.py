@@ -191,7 +191,7 @@ class Hyperliquid(BaseExchange):
         if not self._markets:
             try:
                 self._markets = self.instance.load_markets()
-            except:
+            except (ccxt.BaseError, Exception) as e:
                 return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
         if symbol not in self._markets:
             return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0

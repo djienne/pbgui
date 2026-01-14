@@ -712,7 +712,7 @@ class Database():
                 cur = conn.cursor()
                 cur.execute(sql, [user.name])
                 rows = cur.fetchall()
-                if rows[0][0] is None:
+                if not rows or rows[0][0] is None:
                     return 0
                 return rows[0][0]
         except sqlite3.Error as e:

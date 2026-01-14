@@ -1,3 +1,4 @@
+import ast
 import json
 import hjson
 import pprint
@@ -466,7 +467,7 @@ def load_symbols_from_ini(exchange: str, market_type: str):
     pb_config = configparser.ConfigParser()
     pb_config.read('pbgui.ini', encoding='utf-8')
     if pb_config.has_option("exchanges", f'{exchange}.{market_type}'):
-        return eval(pb_config.get("exchanges", f'{exchange}.{market_type}'))
+        return ast.literal_eval(pb_config.get("exchanges", f'{exchange}.{market_type}'))
     else:
         return []
 

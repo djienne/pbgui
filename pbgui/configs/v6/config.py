@@ -64,7 +64,7 @@ class Config:
             # self._config_v7.bot.long.total_wallet_exposure_limit = json.loads(self._config)["long"]["wallet_exposure_limit"]
             try:
                 self._config_v7.bot.long.unstuck_close_pct = json.loads(self._config)["long"]["auto_unstuck_qty_pct"]
-            except:
+            except (KeyError, json.JSONDecodeError):
                 self._config_v7.bot.long.unstuck_close_pct = 0.025
             self._config_v7.bot.long.unstuck_ema_dist = json.loads(self._config)["long"]["auto_unstuck_ema_dist"]
             # short settings
@@ -88,7 +88,7 @@ class Config:
             # self._config_v7.bot.short.total_wallet_exposure_limit = json.loads(self._config)["short"]["wallet_exposure_limit"]
             try:
                 self._config_v7.bot.short.unstuck_close_pct = json.loads(self._config)["short"]["auto_unstuck_qty_pct"]
-            except:
+            except (KeyError, json.JSONDecodeError):
                 self._config_v7.bot.short.unstuck_close_pct = 0.025
             self._config_v7.bot.short.unstuck_ema_dist = json.loads(self._config)["short"]["auto_unstuck_ema_dist"]
             return json.dumps(self._config_v7.config, indent=4)

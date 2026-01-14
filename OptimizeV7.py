@@ -1,6 +1,7 @@
 import streamlit as st
 import pbgui_help
 import json
+import ast
 import psutil
 import sys
 import platform
@@ -188,7 +189,7 @@ class OptimizeV7Queue:
         # Ensure option exists with default (using locked write)
         if not pb_config.has_option("optimize_v7", "autostart"):
             save_ini("optimize_v7", "autostart", "False")
-        self._autostart = eval(pb_config.get("optimize_v7", "autostart", fallback="False"))
+        self._autostart = ast.literal_eval(pb_config.get("optimize_v7", "autostart", fallback="False"))
         self.load_sort_queue()
         if self._autostart:
             self.run()
@@ -408,7 +409,7 @@ class OptimizeV7Queue:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         self.sort = pb_config.get("optimize_v7", "sort_queue") if pb_config.has_option("optimize_v7", "sort_queue") else "Time"
-        self.sort_order = eval(pb_config.get("optimize_v7", "sort_queue_order")) if pb_config.has_option("optimize_v7", "sort_queue_order") else True
+        self.sort_order = ast.literal_eval(pb_config.get("optimize_v7", "sort_queue_order")) if pb_config.has_option("optimize_v7", "sort_queue_order") else True
 
     def save_sort_queue(self):
         # Use locked batch write to prevent race conditions
@@ -542,7 +543,7 @@ class OptimizeV7Results:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         self.sort_results = pb_config.get("optimize_v7", "sort_results") if pb_config.has_option("optimize_v7", "sort_results") else "Result Time"
-        self.sort_results_order = eval(pb_config.get("optimize_v7", "sort_results_order")) if pb_config.has_option("optimize_v7", "sort_results_order") else True
+        self.sort_results_order = ast.literal_eval(pb_config.get("optimize_v7", "sort_results_order")) if pb_config.has_option("optimize_v7", "sort_results_order") else True
 
     def save_sort_results(self):
         # Use locked batch write to prevent race conditions
@@ -2902,7 +2903,7 @@ class OptimizesV7:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         self.sort = pb_config.get("optimize_v7", "sort") if pb_config.has_option("optimize_v7", "sort") else "Time"
-        self.sort_order = eval(pb_config.get("optimize_v7", "sort_order")) if pb_config.has_option("optimize_v7", "sort_order") else True
+        self.sort_order = ast.literal_eval(pb_config.get("optimize_v7", "sort_order")) if pb_config.has_option("optimize_v7", "sort_order") else True
 
     def save_sort(self):
         # Use locked batch write to prevent race conditions
@@ -2987,7 +2988,7 @@ def main():
                 time.sleep(5)
             pb_config = configparser.ConfigParser()
             pb_config.read('pbgui.ini', encoding='utf-8')
-            if not eval(pb_config.get("optimize_v7", "autostart", fallback="False")):
+            if not ast.literal_eval(pb_config.get("optimize_v7", "autostart", fallback="False")):
                 return
             if item.is_existing():
                 if item.status() == "not started" or item.status() == "error":

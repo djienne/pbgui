@@ -25,7 +25,45 @@ import uuid
 from Status import InstanceStatus, InstancesStatus
 from PBCoinData import CoinData
 from pbgui_purefunc import save_ini
+from constants import DEFAULT_MEM_WARNING_MB, FILE_SIZE_10MB
 import re
+
+
+def extract_flag_value(flags: str, flag_name: str) -> str:
+    """
+    Safely extract a flag value from a flags string.
+    Returns empty string if flag not found or value is invalid.
+    Example: extract_flag_value("-lm n -lw 0.5", "-lm") returns "n"
+    """
+    if flag_name not in flags:
+        return ""
+    parts = flags.split(flag_name)
+    if len(parts) < 2:
+        return ""
+    value_part = parts[1].strip()
+    if not value_part:
+        return ""
+    value_parts = value_part.split()
+    if not value_parts:
+        return ""
+    return value_parts[0]
+
+
+def clean_log_file(path: str) -> None:
+    """
+    Clean a passivbot log file if it exceeds the size limit.
+    Creates a .old backup and truncates the original.
+
+    Args:
+        path: The directory path containing passivbot.log
+    """
+    logfile = Path(f'{path}/passivbot.log')
+    if logfile.exists():
+        if logfile.stat().st_size >= FILE_SIZE_10MB:
+            logfile_old = Path(f'{str(logfile)}.old')
+            copy(logfile, logfile_old)
+            with open(logfile, 'r+') as file:
+                file.truncate()
 
 class Monitor():
     def __init__(self):
@@ -125,7 +163,7 @@ class Monitor():
                     # Skip PNLs after restart bot
                     if "initiating pnl" in line:
                         self.init_found = True
-                    if "starting execution loop" in line or "done initiating bot" or "watching" in line:
+                    if "starting execution loop" in line or "done initiating bot" in line or "watching" in line:
                         self.init_found = False
                     if self.init_found:
                         continue
@@ -293,17 +331,17 @@ class RunSingle():
         self.pbvenv = None
         self.pbgdir = None
     
-    def watch(self):
+    def watch(self) -> None:
         if not self.is_running():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Start Single from watch: {self.user} {self.symbol}')
             self.start()
 
-    def is_running(self):
+    def is_running(self) -> bool:
         if self.pid():
             return True
         return False
 
-    def pid(self):
+    def pid(self) -> psutil.Process | None:
         for process in psutil.process_iter():
             try:
                 cmdline = process.cmdline()
@@ -316,8 +354,9 @@ class RunSingle():
                 self.monitor.memory = process.memory_full_info()
                 self.monitor.cpu = process.cpu_percent()
                 return process
+        return None
 
-    def stop(self):
+    def stop(self) -> None:
         if self.is_running():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: {self.user} {self.symbol}')
             self.pid().kill()
@@ -346,13 +385,7 @@ class RunSingle():
             sleep(1)
 
     def clean_log(self):
-        logfile = Path(f'{self.path}/passivbot.log')
-        if logfile.exists():
-            if logfile.stat().st_size >= 10485760:
-                logfile_old = Path(f'{str(logfile)}.old')
-                copy(logfile,logfile_old)
-                with open(logfile,'r+') as file:
-                    file.truncate()
+        clean_log_file(self.path)
 
     def create_parameters(self):
         """Create the list of parameters used when running passivbot single instance.
@@ -470,23 +503,23 @@ class RunMulti():
         self.pbgdir = None
         self.dynamic_ignore = None
     
-    def watch(self):
+    def watch(self) -> None:
         if not self.is_running():
             self.start()
 
-    def watch_dynamic(self):
+    def watch_dynamic(self) -> None:
         if self.dynamic_ignore is not None:
             if self.dynamic_ignore.watch():
                 self.stop()
                 self.create_multi_hjson()
                 self.start()
 
-    def is_running(self):
+    def is_running(self) -> bool:
         if self.pid():
             return True
         return False
 
-    def pid(self):
+    def pid(self) -> psutil.Process | None:
         for process in psutil.process_iter():
             try:
                 cmdline = process.cmdline()
@@ -499,13 +532,14 @@ class RunMulti():
                 self.monitor.memory = process.memory_full_info()
                 self.monitor.cpu = process.cpu_percent()
                 return process
+        return None
 
-    def stop(self):
+    def stop(self) -> None:
         if self.is_running():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: passivbot_multi.py {self.path}/multi_run.hjson')
             self.pid().kill()
 
-    def start(self):
+    def start(self) -> None:
         if not self.is_running():
             cmd = [self.pbvenv, '-u', PurePath(f'{self.pbdir}/passivbot_multi.py'), PurePath(f'{self.path}/multi_run.hjson')]
             logfile = Path(f'{self.path}/passivbot.log')
@@ -524,13 +558,7 @@ class RunMulti():
             sleep(1)
 
     def clean_log(self):
-        logfile = Path(f'{self.path}/passivbot.log')
-        if logfile.exists():
-            if logfile.stat().st_size >= 10485760:
-                logfile_old = Path(f'{str(logfile)}.old')
-                copy(logfile,logfile_old)
-                with open(logfile,'r+') as file:
-                    file.truncate()
+        clean_log_file(self.path)
 
     def create_multi_hjson(self):
         # Write running Version to file
@@ -626,20 +654,20 @@ class RunV7():
         self.pbgdir = None
         self.dynamic_ignore = None
 
-    def watch(self):
+    def watch(self) -> None:
         if not self.is_running():
             self.start()
 
-    def watch_dynamic(self):
+    def watch_dynamic(self) -> None:
         if self.dynamic_ignore is not None:
             self.dynamic_ignore.watch()
 
-    def is_running(self):
+    def is_running(self) -> bool:
         if self.pid():
             return True
         return False
 
-    def pid(self):
+    def pid(self) -> psutil.Process | None:
         for process in psutil.process_iter():
             try:
                 cmdline = process.cmdline()
@@ -648,18 +676,19 @@ class RunV7():
             except psutil.AccessDenied:
                 pass
             if any(self.user in sub for sub in cmdline) and any("main.py" in sub for sub in cmdline):
-                if cmdline[-1].endswith(f'/{self.user}/config_run.json') or cmdline[-1].endswith(f'\{self.user}\config_run.json'):
+                if cmdline[-1].endswith(f'/{self.user}/config_run.json') or cmdline[-1].endswith(f'\\{self.user}\\config_run.json'):
                     self.monitor.start_time = process.create_time()
                     self.monitor.memory = process.memory_full_info()
                     self.monitor.cpu = process.cpu_percent()
                     return process
+        return None
 
-    def stop(self):
+    def stop(self) -> None:
         if self.is_running():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: passivbot v7 {self.path}/config_run.json')
             self.pid().kill()
 
-    def start(self):
+    def start(self) -> None:
         if not self.is_running():
             old_os_path = os.environ.get('PATH', '')
             new_os_path = os.path.dirname(self.pbvenv) + os.pathsep + old_os_path
@@ -682,13 +711,7 @@ class RunV7():
             sleep(1)
 
     def clean_log(self):
-        logfile = Path(f'{self.path}/passivbot.log')
-        if logfile.exists():
-            if logfile.stat().st_size >= 10485760:
-                logfile_old = Path(f'{str(logfile)}.old')
-                copy(logfile,logfile_old)
-                with open(logfile,'r+') as file:
-                    file.truncate()
+        clean_log_file(self.path)
 
     def create_v7_running_version(self):
         # Write running Version to file
@@ -724,21 +747,22 @@ class RunV7():
                                 sw = ""
                                 lev = ""
                                 flags = coin_flags[coin]
-                                # if -lm in flags then get mode_long
-                                if "-lm" in flags:
-                                    lm = f'-lm {flags.split("-lm")[1].split()[0]} '
-                                # if -lw in flags then get we_long
-                                if "-lw" in flags:
-                                    lw = f'-lw {flags.split("-lw")[1].split()[0]} '
-                                # if -sm in flags then get mode_short
-                                if "-sm" in flags:
-                                    sm = f'-sm {flags.split("-sm")[1].split()[0]} '
-                                # if -sw in flags then get we_short
-                                if "-sw" in flags:
-                                    sw = f'-sw {flags.split("-sw")[1].split()[0]} '
-                                # if -lev in flags then get leverage
-                                if "-lev" in flags:
-                                    lev = f'-lev {flags.split("-lev")[1].split()[0]} '
+                                # Safely extract flag values
+                                lm_val = extract_flag_value(flags, "-lm")
+                                if lm_val:
+                                    lm = f'-lm {lm_val} '
+                                lw_val = extract_flag_value(flags, "-lw")
+                                if lw_val:
+                                    lw = f'-lw {lw_val} '
+                                sm_val = extract_flag_value(flags, "-sm")
+                                if sm_val:
+                                    sm = f'-sm {sm_val} '
+                                sw_val = extract_flag_value(flags, "-sw")
+                                if sw_val:
+                                    sw = f'-sw {sw_val} '
+                                lev_val = extract_flag_value(flags, "-lev")
+                                if lev_val:
+                                    lev = f'-lev {lev_val} '
                                 new_flags = f"{lm}{lw}{sm}{sw}{lev}{lc}"
                                 coin_flags[coin] = new_flags
                         self._v7_config["live"]["coin_flags"] = coin_flags
@@ -1564,20 +1588,24 @@ class PBRun():
         high_mem = 0
         high_bot = None
         for v7 in self.run_v7:
-            mem = v7.monitor.memory[0] + v7.monitor.memory[9]
-            if mem > high_mem:
-                high_mem = mem
-                high_bot = v7
+            # memory is a psutil named tuple when set, 0 when not initialized
+            if v7.monitor.memory and hasattr(v7.monitor.memory, '__getitem__') and len(v7.monitor.memory) > 9:
+                mem = v7.monitor.memory[0] + v7.monitor.memory[9]
+                if mem > high_mem:
+                    high_mem = mem
+                    high_bot = v7
         for multi in self.run_multi:
-            mem = multi.monitor.memory[0] + multi.monitor.memory[9]
-            if mem > high_mem:
-                high_mem = mem
-                high_bot = multi
+            if multi.monitor.memory and hasattr(multi.monitor.memory, '__getitem__') and len(multi.monitor.memory) > 9:
+                mem = multi.monitor.memory[0] + multi.monitor.memory[9]
+                if mem > high_mem:
+                    high_mem = mem
+                    high_bot = multi
         for single in self.run_single:
-            mem = single.monitor.memory[0] + single.monitor.memory[9]
-            if mem > high_mem:
-                high_mem = mem
-                high_bot = single
+            if single.monitor.memory and hasattr(single.monitor.memory, '__getitem__') and len(single.monitor.memory) > 9:
+                mem = single.monitor.memory[0] + single.monitor.memory[9]
+                if mem > high_mem:
+                    high_mem = mem
+                    high_bot = single
         return high_bot
     
     def watch_memory(self):
@@ -1585,7 +1613,7 @@ class PBRun():
         mem = psutil.virtual_memory()
         swap = psutil.swap_memory()
         free = (mem.available + swap.free) / 1024 / 1024  # in MB
-        if free < 250:
+        if free < DEFAULT_MEM_WARNING_MB:
             high_bot = self.find_high_memory_bot()
             if high_bot:
                 print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Warning: Low System memory {free:.2f}MB, restarting bot {high_bot.user}')

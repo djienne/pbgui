@@ -1,3 +1,4 @@
+import ast
 import ccxt
 import configparser
 import json
@@ -258,10 +259,10 @@ class BaseExchange:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         if pb_config.has_option("exchanges", f'{self.id}.spot'):
-            self.spot = eval(pb_config.get("exchanges", f'{self.id}.spot'))
+            self.spot = ast.literal_eval(pb_config.get("exchanges", f'{self.id}.spot'))
             self.spot = filter_ascii_symbols(self.spot)
         if pb_config.has_option("exchanges", f'{self.id}.swap'):
-            self.swap = eval(pb_config.get("exchanges", f'{self.id}.swap'))
+            self.swap = ast.literal_eval(pb_config.get("exchanges", f'{self.id}.swap'))
             self.swap = filter_ascii_symbols(self.swap)
         if not self.spot and not self.swap:
             self.fetch_symbols()
@@ -279,7 +280,7 @@ class BaseExchange:
         if not self._markets:
             try:
                 self._markets = self.instance.load_markets()
-            except:
+            except (ccxt.BaseError, Exception) as e:
                 return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
         if symbol not in self._markets:
             return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0

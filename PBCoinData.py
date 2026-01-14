@@ -1,3 +1,4 @@
+import ast
 import psutil
 import subprocess
 from time import sleep
@@ -420,7 +421,7 @@ class CoinData:
                     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: Can not fetch CoinMarketCap data (HTTP {response.status_code})')
                     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: API Error: {error_msg}')
                     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: Full response: {response.text[:500]}')
-                except:
+                except json.JSONDecodeError:
                     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: Can not fetch CoinMarketCap data (HTTP {response.status_code})')
                     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: Response body: {response.text[:500]}')
                 self.data = None
@@ -516,7 +517,7 @@ class CoinData:
                     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: Can not fetch CoinMarketCap metadata (HTTP {response.status_code})')
                     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: API Error: {error_msg}')
                     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: Full response: {response.text[:500]}')
-                except:
+                except json.JSONDecodeError:
                     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: Can not fetch CoinMarketCap metadata (HTTP {response.status_code})')
                     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: Response body: {response.text[:500]}')
                 self.metadata = None
@@ -669,10 +670,10 @@ class CoinData:
         pb_config.read('pbgui.ini', encoding='utf-8')
         exchange = "kucoinfutures" if self.exchange == "kucoin" else self.exchange
         if pb_config.has_option("exchanges", f'{exchange}.swap'):
-            self._symbols = eval(pb_config.get("exchanges", f'{exchange}.swap'))
+            self._symbols = ast.literal_eval(pb_config.get("exchanges", f'{exchange}.swap'))
         if self.exchange in ["binance", "bybit", "bitget"]:
             if pb_config.has_option("exchanges", f'{exchange}.cpt'):
-                self._symbols_cpt = eval(pb_config.get("exchanges", f'{exchange}.cpt'))
+                self._symbols_cpt = ast.literal_eval(pb_config.get("exchanges", f'{exchange}.cpt'))
                 return
         self._symbols_cpt = self._symbols
     
@@ -683,7 +684,7 @@ class CoinData:
         for exchange in self.exchanges:
             if pb_config.has_option("exchanges", f'{exchange}.swap'):
                 # add symbol from symbols to symbols_all if not already in symbols_all
-                self._symbols_all += eval(pb_config.get("exchanges", f'{exchange}.swap'))
+                self._symbols_all += ast.literal_eval(pb_config.get("exchanges", f'{exchange}.swap'))
         self._symbols_all = sorted(list(set(self._symbols_all)))
         print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: load_symbols_all loaded {len(self._symbols_all)} symbols from pbgui.ini')
         if not self._symbols_all:

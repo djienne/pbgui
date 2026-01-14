@@ -1,3 +1,4 @@
+import ast
 import psutil
 import subprocess
 import sys
@@ -96,7 +97,7 @@ class PBData():
             print(f"{datetime.now().isoformat(sep=' ', timespec='seconds')} Warning: failed reading pbgui.ini ({e}); keeping previous fetch_users: {self._fetch_users}")
             return
         if pb_config.has_option("pbdata", "fetch_users"):
-            users = eval(pb_config.get("pbdata", "fetch_users"))
+            users = ast.literal_eval(pb_config.get("pbdata", "fetch_users"))
             for user in users.copy():
                 if user not in self.users.list():
                     users.remove(user)

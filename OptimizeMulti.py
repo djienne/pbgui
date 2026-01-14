@@ -1,6 +1,7 @@
 import streamlit as st
 import pbgui_help
 import json
+import ast
 import psutil
 import sys
 import platform
@@ -142,7 +143,7 @@ class OptimizeMultiQueue:
         # Ensure option exists with default (using locked write)
         if not pb_config.has_option("optimize_multi", "autostart"):
             save_ini("optimize_multi", "autostart", "False")
-        self._autostart = eval(pb_config.get("optimize_multi", "autostart", fallback="False"))
+        self._autostart = ast.literal_eval(pb_config.get("optimize_multi", "autostart", fallback="False"))
         if self._autostart:
             self.run()
 
@@ -894,7 +895,7 @@ def main():
                 time.sleep(5)
             pb_config = configparser.ConfigParser()
             pb_config.read('pbgui.ini', encoding='utf-8')
-            if not eval(pb_config.get("optimize_multi", "autostart", fallback="False")):
+            if not ast.literal_eval(pb_config.get("optimize_multi", "autostart", fallback="False")):
                 return
             if item.status() == "not started":
                 print(f'{datetime.datetime.now().isoformat(sep=" ", timespec="seconds")} Optimizing {item.filename} started')

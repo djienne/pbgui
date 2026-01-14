@@ -70,7 +70,7 @@ class BalanceCalculator:
                 try:
                     self.config.config = json.loads(st.session_state.edit_bc_config)
                     self.init_coindata()
-                except:
+                except json.JSONDecodeError:
                     error_popup("Invalid JSON")
                     st.session_state.edit_bc_config = json.dumps(self.config.config, indent=4)
         else:

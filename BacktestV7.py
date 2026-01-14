@@ -2,6 +2,7 @@ import streamlit as st
 import plotly.graph_objects as go
 import pbgui_help
 import json
+import ast
 import psutil
 import sys
 import platform
@@ -200,7 +201,7 @@ class BacktestV7Queue:
             needs_init = True
         if needs_init:
             save_ini_batch({"backtest_v7": {"autostart": "False", "cpu": "1"}})
-        self._autostart = eval(pb_config.get("backtest_v7", "autostart", fallback="False"))
+        self._autostart = ast.literal_eval(pb_config.get("backtest_v7", "autostart", fallback="False"))
         self._cpu = int(pb_config.get("backtest_v7", "cpu", fallback="1"))
         if self._autostart:
             self.run()
@@ -436,7 +437,7 @@ class BacktestV7Queue:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         self.sort = pb_config.get("backtest_v7", "sort_queue") if pb_config.has_option("backtest_v7", "sort_queue") else "Time"
-        self.sort_order = eval(pb_config.get("backtest_v7", "sort_queue_order")) if pb_config.has_option("backtest_v7", "sort_queue_order") else True
+        self.sort_order = ast.literal_eval(pb_config.get("backtest_v7", "sort_queue_order")) if pb_config.has_option("backtest_v7", "sort_queue_order") else True
 
     def save_sort_queue(self):
         # Use locked batch write to prevent race conditions
@@ -917,7 +918,7 @@ class BacktestV7Item:
             if st.session_state.import_backtest_v7_config != json.dumps(self.config.config, indent=4):
                 try:
                     self.config.config = json.loads(st.session_state.import_backtest_v7_config)
-                except:
+                except json.JSONDecodeError:
                     st.error("Invalid JSON")
                     # error_popup("Invalid JSON")
             st.session_state.import_backtest_v7_config = json.dumps(self.config.config, indent=4)
@@ -1749,7 +1750,7 @@ class BacktestV7Results:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         self.sort_results = pb_config.get("backtest_v7", "sort_results") if pb_config.has_option("backtest_v7", "sort_results") else "Result Time"
-        self.sort_results_order = eval(pb_config.get("backtest_v7", "sort_results_order")) if pb_config.has_option("backtest_v7", "sort_results_order") else True
+        self.sort_results_order = ast.literal_eval(pb_config.get("backtest_v7", "sort_results_order")) if pb_config.has_option("backtest_v7", "sort_results_order") else True
 
     def save_sort_results(self):
         # Use locked batch write to prevent race conditions
@@ -2041,7 +2042,7 @@ class BacktestsV7:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         self.sort = pb_config.get("backtest_v7", "sort") if pb_config.has_option("backtest_v7", "sort") else "Time"
-        self.sort_order = eval(pb_config.get("backtest_v7", "sort_order")) if pb_config.has_option("backtest_v7", "sort_order") else True
+        self.sort_order = ast.literal_eval(pb_config.get("backtest_v7", "sort_order")) if pb_config.has_option("backtest_v7", "sort_order") else True
 
     def save_sort(self):
         # Use locked batch write to prevent race conditions
@@ -2156,7 +2157,7 @@ def main():
                 time.sleep(5)
             pb_config = configparser.ConfigParser()
             pb_config.read('pbgui.ini', encoding='utf-8')
-            if not eval(pb_config.get("backtest_v7", "autostart", fallback="False")):
+            if not ast.literal_eval(pb_config.get("backtest_v7", "autostart", fallback="False")):
                 return
             if item.status() == "not started":
                 print(f'{datetime.datetime.now().isoformat(sep=" ", timespec="seconds")} Backtesting {item.filename} started')

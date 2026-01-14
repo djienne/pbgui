@@ -100,7 +100,7 @@ class ConfigUI:
                     long = json.loads(st.session_state.edit_configv7_long)
                     if st.session_state.edit_configv7_long_twe != float(long["total_wallet_exposure_limit"]):
                         st.session_state.edit_configv7_long_twe = float(long["total_wallet_exposure_limit"])
-                except:
+                except json.JSONDecodeError:
                     st.session_state.edit_configv7_long = json.dumps(self.config_model.bot.bot["long"], indent=4)
                     error_popup("Invalid JSON long | RESET")
         else:
@@ -115,7 +115,7 @@ class ConfigUI:
                     long = json.loads(st.session_state.edit_configv7_long)
                     if st.session_state.edit_configv7_long_positions != float(long["n_positions"]):
                         st.session_state.edit_configv7_long_positions = float(long["n_positions"])
-                except:
+                except json.JSONDecodeError:
                     st.session_state.edit_configv7_long = json.dumps(self.config_model.bot.bot["long"], indent=4)
                     error_popup("Invalid JSON long | RESET")
         else:
@@ -130,7 +130,7 @@ class ConfigUI:
                     short = json.loads(st.session_state.edit_configv7_short)
                     if st.session_state.edit_configv7_short_twe != float(short["total_wallet_exposure_limit"]):
                         st.session_state.edit_configv7_short_twe = float(short["total_wallet_exposure_limit"])
-                except:
+                except json.JSONDecodeError:
                     st.session_state.edit_configv7_short = json.dumps(self.config_model.bot.bot["short"], indent=4)
                     error_popup("Invalid JSON short | RESET")
         else:
@@ -145,7 +145,7 @@ class ConfigUI:
                     short = json.loads(st.session_state.edit_configv7_short)
                     if st.session_state.edit_configv7_short_positions != float(short["n_positions"]):
                         st.session_state.edit_configv7_short_positions = float(short["n_positions"])
-                except:
+                except json.JSONDecodeError:
                     st.session_state.edit_configv7_short = json.dumps(self.config_model.bot.bot["short"], indent=4)
                     error_popup("Invalid JSON short | RESET")   
         else:
@@ -155,7 +155,7 @@ class ConfigUI:
             if st.session_state.edit_configv7_long != json.dumps(self.config_model.bot.bot["long"], indent=4):
                 try:
                     self.config_model.bot.long.long = json.loads(st.session_state.edit_configv7_long)
-                except:
+                except json.JSONDecodeError:
                     st.session_state.edit_configv7_long = json.dumps(self.config_model.bot.bot["long"], indent=4)
                     error_popup("Invalid JSON long | RESET")
         else:
@@ -165,7 +165,7 @@ class ConfigUI:
             if st.session_state.edit_configv7_short != json.dumps(self.config_model.bot.bot["short"], indent=4):
                 try:
                     self.config_model.bot.short.short = json.loads(st.session_state.edit_configv7_short)
-                except:
+                except json.JSONDecodeError:
                     st.session_state.edit_configv7_short = json.dumps(self.config_model.bot.bot["short"], indent=4)
                     error_popup("Invalid JSON short | RESET")
         else:
@@ -192,7 +192,7 @@ class ConfigUI:
             if st.session_state.edit_cf_configv7_long != json.dumps(self.config_model.bot.bot["long"], indent=4):
                 try:
                     self.config_model.bot.long.long = json.loads(st.session_state.edit_cf_configv7_long)
-                except:
+                except json.JSONDecodeError:
                     error_popup("Invalid JSON | RESET")
         else:
             st.session_state.edit_cf_configv7_long = json.dumps(self.config_model.bot.bot["long"], indent=4)
@@ -200,7 +200,7 @@ class ConfigUI:
             if st.session_state.edit_cf_configv7_short != json.dumps(self.config_model.bot.bot["short"], indent=4):
                 try:
                     self.config_model.bot.short.short = json.loads(st.session_state.edit_cf_configv7_short)
-                except:
+                except json.JSONDecodeError:
                     error_popup("Invalid JSON | RESET")
         else:
             st.session_state.edit_cf_configv7_short = json.dumps(self.config_model.bot.bot["short"], indent=4)
@@ -216,7 +216,7 @@ class ConfigUI:
             if st.session_state.edit_co_configv7_long != json.dumps(self.config_model.bot.bot["long"], indent=4):
                 try:
                     self.config_model.bot.long.long = json.loads(st.session_state.edit_co_configv7_long)
-                except:
+                except json.JSONDecodeError:
                     error_popup("Invalid JSON | RESET")
         else:
             st.session_state.edit_co_configv7_long = json.dumps(self.config_model.bot.bot["long"], indent=4)
@@ -224,7 +224,7 @@ class ConfigUI:
             if st.session_state.edit_co_configv7_short != json.dumps(self.config_model.bot.bot["short"], indent=4):
                 try:
                     self.config_model.bot.short.short = json.loads(st.session_state.edit_co_configv7_short)
-                except:
+                except json.JSONDecodeError:
                     error_popup("Invalid JSON | RESET")
         else:
             st.session_state.edit_co_configv7_short = json.dumps(self.config_model.bot.bot["short"], indent=4)
@@ -555,7 +555,7 @@ class BalanceCalculator:
                 try:
                     self.config.config = json.loads(st.session_state.edit_bc_config)
                     self.init_coindata()
-                except:
+                except json.JSONDecodeError:
                     error_popup("Invalid JSON")
                     st.session_state.edit_bc_config = json.dumps(self.config.config, indent=4)
         else:

@@ -14,7 +14,7 @@ def edit(self):
                 long = json.loads(st.session_state.edit_configv7_long)
                 if st.session_state.edit_configv7_long_twe != float(long["total_wallet_exposure_limit"]):
                     st.session_state.edit_configv7_long_twe = float(long["total_wallet_exposure_limit"])
-            except:
+            except json.JSONDecodeError:
                 st.session_state.edit_configv7_long = json.dumps(self.bot["long"], indent=4)
                 error_popup("Invalid JSON long | RESET")
     else:
@@ -29,7 +29,7 @@ def edit(self):
                 long = json.loads(st.session_state.edit_configv7_long)
                 if st.session_state.edit_configv7_long_positions != float(long["n_positions"]):
                     st.session_state.edit_configv7_long_positions = float(long["n_positions"])
-            except:
+            except json.JSONDecodeError:
                 st.session_state.edit_configv7_long = json.dumps(self.bot["long"], indent=4)
                 error_popup("Invalid JSON long | RESET")
     else:
@@ -44,7 +44,7 @@ def edit(self):
                 short = json.loads(st.session_state.edit_configv7_short)
                 if st.session_state.edit_configv7_short_twe != float(short["total_wallet_exposure_limit"]):
                     st.session_state.edit_configv7_short_twe = float(short["total_wallet_exposure_limit"])
-            except:
+            except json.JSONDecodeError:
                 st.session_state.edit_configv7_short = json.dumps(self.bot["short"], indent=4)
                 error_popup("Invalid JSON short | RESET")
     else:
@@ -59,7 +59,7 @@ def edit(self):
                 short = json.loads(st.session_state.edit_configv7_short)
                 if st.session_state.edit_configv7_short_positions != float(short["n_positions"]):
                     st.session_state.edit_configv7_short_positions = float(short["n_positions"])
-            except:
+            except json.JSONDecodeError:
                 st.session_state.edit_configv7_short = json.dumps(self.bot["short"], indent=4)
                 error_popup("Invalid JSON short | RESET")   
     else:
@@ -69,7 +69,7 @@ def edit(self):
         if st.session_state.edit_configv7_long != json.dumps(self.bot["long"], indent=4):
             try:
                 self.long = json.loads(st.session_state.edit_configv7_long)
-            except:
+            except json.JSONDecodeError:
                 st.session_state.edit_configv7_long = json.dumps(self.bot["long"], indent=4)
                 error_popup("Invalid JSON long | RESET")
     else:
@@ -79,7 +79,7 @@ def edit(self):
         if st.session_state.edit_configv7_short != json.dumps(self.bot["short"], indent=4):
             try:
                 self.short = json.loads(st.session_state.edit_configv7_short)
-            except:
+            except json.JSONDecodeError:
                 st.session_state.edit_configv7_short = json.dumps(self.bot["short"], indent=4)
                 error_popup("Invalid JSON short | RESET")
     else:
@@ -106,7 +106,7 @@ def edit_cf(self):
         if st.session_state.edit_cf_configv7_long != json.dumps(self.bot["long"], indent=4):
             try:
                 self.long = json.loads(st.session_state.edit_cf_configv7_long)
-            except:
+            except json.JSONDecodeError:
                 error_popup("Invalid JSON | RESET")
     else:
         st.session_state.edit_cf_configv7_long = json.dumps(self.bot["long"], indent=4)
@@ -114,7 +114,7 @@ def edit_cf(self):
         if st.session_state.edit_cf_configv7_short != json.dumps(self.bot["short"], indent=4):
             try:
                 self.short = json.loads(st.session_state.edit_cf_configv7_short)
-            except:
+            except json.JSONDecodeError:
                 error_popup("Invalid JSON | RESET")
     else:
         st.session_state.edit_cf_configv7_short = json.dumps(self.bot["short"], indent=4)
@@ -130,7 +130,7 @@ def edit_co(self):
         if st.session_state.edit_co_configv7_long != json.dumps(self.bot["long"], indent=4):
             try:
                 self.long = json.loads(st.session_state.edit_co_configv7_long)
-            except:
+            except json.JSONDecodeError:
                 error_popup("Invalid JSON | RESET")
     else:
         st.session_state.edit_co_configv7_long = json.dumps(self.bot["long"], indent=4)
@@ -138,7 +138,7 @@ def edit_co(self):
         if st.session_state.edit_co_configv7_short != json.dumps(self.bot["short"], indent=4):
             try:
                 self.short = json.loads(st.session_state.edit_co_configv7_short)
-            except:
+            except json.JSONDecodeError:
                 error_popup("Invalid JSON | RESET")
     else:
         st.session_state.edit_co_configv7_short = json.dumps(self.bot["short"], indent=4)

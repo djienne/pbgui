@@ -4,6 +4,7 @@ from bokeh.palettes import Category20_20, Category20b_20, Category20c_20
 from bokeh.models import NumeralTickFormatter, HoverTool
 import pbgui_help
 import json
+import ast
 import psutil
 import sys
 import platform
@@ -164,7 +165,7 @@ class BacktestMultiQueue:
             })
             # Re-read the config after writing
             pb_config.read('pbgui.ini', encoding='utf-8')
-        self._autostart = eval(pb_config.get("backtest_multi", "autostart", fallback="False"))
+        self._autostart = ast.literal_eval(pb_config.get("backtest_multi", "autostart", fallback="False"))
         self._cpu = int(pb_config.get("backtest_multi", "cpu", fallback="1"))
         if self._autostart:
             self.run()
@@ -469,7 +470,7 @@ class BacktestMultiItem:
         pb_config = configparser.ConfigParser()
         pb_config.read('pbgui.ini', encoding='utf-8')
         if pb_config.has_option("exchanges", f'{self.exchange}.swap'):
-            return eval(pb_config.get("exchanges", f'{self.exchange}.swap'))
+            return ast.literal_eval(pb_config.get("exchanges", f'{self.exchange}.swap'))
         else:
             return []
 
@@ -1236,7 +1237,7 @@ def main():
                 time.sleep(5)
             pb_config = configparser.ConfigParser()
             pb_config.read('pbgui.ini', encoding='utf-8')
-            if not eval(pb_config.get("backtest_multi", "autostart", fallback="False")):
+            if not ast.literal_eval(pb_config.get("backtest_multi", "autostart", fallback="False")):
                 return
             if item.status() == "not started":
                 print(f'{datetime.datetime.now().isoformat(sep=" ", timespec="seconds")} Backtesting {item.filename} started')

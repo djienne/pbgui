@@ -608,7 +608,7 @@ class V7Instance():
             if st.session_state.import_run_v7_config != json.dumps(self.config.config, indent=4):
                 try:
                     self.config.config = json.loads(st.session_state.import_run_v7_config)
-                except:
+                except json.JSONDecodeError:
                     error_popup("Invalid JSON")
             st.session_state.import_run_v7_config = json.dumps(self.config.config, indent=4)
             if self.config.live.user in self._users.list_v7():
