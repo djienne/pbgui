@@ -16,7 +16,7 @@ from io import TextIOWrapper
 from datetime import datetime
 import platform
 from PBRun import PBRun
-from pbgui_purefunc import save_ini
+from pbgui_purefunc import save_ini, rotate_service_log
 from Status import InstancesStatus
 from RemoteServer import RemoteServer
 import shutil
@@ -501,6 +501,7 @@ class PBRemote():
             subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True, creationflags=creationflags)
         else:
             subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True)
+        log.close()
 
     def sync_status_down(self):
         if self.role == "master":
@@ -910,11 +911,7 @@ def main():
     remote.startts = round(datetime.now().timestamp())
     while True:
         try:
-            if logfile.exists():
-                if logfile.stat().st_size >= 10485760:
-                    logfile.replace(f'{str(logfile)}.old')
-                    sys.stdout = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
-                    sys.stderr = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
+            rotate_service_log(logfile)
             remote.sync_v7_up()
             remote.sync_multi_up()
             remote.sync_single_up()

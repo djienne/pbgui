@@ -5,7 +5,9 @@ import pprint
 import configparser
 from pathlib import Path
 import os
+import sys
 import shutil
+from io import TextIOWrapper
 from datetime import datetime
 import time
 import glob
@@ -491,3 +493,44 @@ def load_default_coins():
 
     # Return empty lists if any error occurs
     return {'approved_coins_long': [], 'approved_coins_short': []}
+
+def rotate_service_log(logfile: Path, max_bytes: int = 10_485_760):
+    """Rotate a service log file, closing old file handles properly.
+
+    Checks if ``logfile`` exceeds ``max_bytes``.  If so, it closes the
+    current ``sys.stdout`` / ``sys.stderr`` (when they are file-backed),
+    renames the log to ``<logfile>.old``, and opens fresh handles.
+
+    This replaces the copy-pasted rotation pattern used in every
+    background service and fixes the file-handle leak where old
+    stdout/stderr wrappers were never closed.
+    """
+    if not logfile.exists() or logfile.stat().st_size < max_bytes:
+        return
+    # Close old file-backed handles to avoid descriptor leaks
+    for stream in (sys.stdout, sys.stderr):
+        if stream is not None and stream is not sys.__stdout__ and stream is not sys.__stderr__:
+            try:
+                stream.close()
+            except Exception:
+                pass
+    logfile.replace(f'{str(logfile)}.old')
+    sys.stdout = TextIOWrapper(open(logfile, "ab", 0), encoding='utf-8', write_through=True)
+    sys.stderr = TextIOWrapper(open(logfile, "ab", 0), encoding='utf-8', write_through=True)
+
+def prune_backups(backup_parent: Path, keep: int = 10):
+    """Keep only the most recent *keep* backup sub-directories.
+
+    ``backup_parent`` is the per-instance backup directory, e.g.
+    ``data/backup/v7/<instance_name>/``.  Entries are sorted by mtime;
+    the oldest beyond *keep* are removed with :func:`shutil.rmtree`.
+    """
+    if not backup_parent.exists():
+        return
+    backups = sorted(
+        [p for p in backup_parent.iterdir() if p.is_dir()],
+        key=lambda p: p.stat().st_mtime,
+    )
+    while len(backups) > keep:
+        old = backups.pop(0)
+        shutil.rmtree(old, ignore_errors=True)

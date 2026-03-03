@@ -312,6 +312,7 @@ class BacktestItem(Base):
                 subprocess.Popen(cmd, stdout=log, stderr=log, cwd=pbdir(), text=True, creationflags=creationflags)
             else:
                 subprocess.Popen(cmd, stdout=log, stderr=log, cwd=pbdir(), text=True, start_new_session=True)
+            log.close()
 
 class BacktestQueue:
     def __init__(self):
@@ -434,6 +435,7 @@ class BacktestQueue:
                 subprocess.Popen(cmd, stdout=log, stderr=log, cwd=PBGDIR, text=True, creationflags=creationflags)
             else:
                 subprocess.Popen(cmd, stdout=log, stderr=log, cwd=PBGDIR, text=True, start_new_session=True)
+            log.close()
 
     def stop(self):
         if self.is_running():

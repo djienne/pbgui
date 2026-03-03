@@ -14,7 +14,7 @@ from pbgui_func import PBGDIR
 from telegram import Bot
 from PBRemote import PBRemote
 import re
-from pbgui_purefunc import load_ini, save_ini
+from pbgui_purefunc import load_ini, save_ini, rotate_service_log
 
 class PBMon():
     def __init__(self):
@@ -157,11 +157,7 @@ def main():
     pbmon.save_pid()
     while True:
         try:
-            if logfile.exists():
-                if logfile.stat().st_size >= 10485760:
-                    logfile.replace(f'{str(logfile)}.old')
-                    sys.stdout = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
-                    sys.stderr = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
+            rotate_service_log(logfile)
             if pbmon.telegram_token and pbmon.telegram_chat_id:
                 asyncio.run(pbmon.has_errors())
             sleep(60)

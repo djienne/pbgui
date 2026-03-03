@@ -117,6 +117,7 @@ class OptimizeItem(Base):
                 result = subprocess.run(cmd, stdout=log, stderr=log, cwd=pbdir(), text=True, creationflags=creationflags)
             else:
                 result = subprocess.run(cmd, stdout=log, stderr=log, cwd=pbdir(), text=True)
+            log.close()
             if result.returncode == 0:
                 self.finish +=1
                 self.save(self.position)
@@ -578,6 +579,7 @@ class OptimizeQueue:
                 subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbgdir, text=True, creationflags=creationflags)
             else:
                 subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbgdir, text=True, start_new_session=True)
+            log.close()
 
     def add(self, item: OptimizeItem = None):
         if item:

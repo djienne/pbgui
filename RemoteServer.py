@@ -257,6 +257,7 @@ class RemoteServer():
                 subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True, creationflags=creationflags)
             else:
                 subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True)
+            log.close()
             PBRun().update_status(self.instances_status_v7.status_file, self.name)
             status_ts = self.instances_status_v7.status_ts
             self.instances_status_v7.update_status()
@@ -276,6 +277,7 @@ class RemoteServer():
                 subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True, creationflags=creationflags)
             else:
                 subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True)
+            log.close()
             PBRun().update_status(self.instances_status.status_file, self.name)
             status_ts = self.instances_status.status_ts
             self.instances_status.update_status()
@@ -295,6 +297,7 @@ class RemoteServer():
                 subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True, creationflags=creationflags)
             else:
                 subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True)
+            log.close()
             PBRun().update_status(self.instances_status_single.status_file, self.name)
             status_ts = self.instances_status_single.status_ts
             self.instances_status_single.update_status()
@@ -356,6 +359,7 @@ class RemoteServer():
             subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True, creationflags=creationflags)
         else:
             subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True)
+        log.close()
         # delete local files
         shutil.rmtree(f'{pbgdir}/data/remote/cmd_{self.name}', ignore_errors=True)
         shutil.rmtree(f'{pbgdir}/data/remote/instances_{self.name}', ignore_errors=True)

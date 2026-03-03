@@ -9,6 +9,8 @@ This status list is then sent through PBRemote to the remote storage, enabling u
 """
 from pathlib import Path
 import json
+import os
+import tempfile
 
 class InstanceStatus():
     """Stores information about one passivbot configuration."""
@@ -141,7 +143,11 @@ class InstancesStatus():
                     print(f"Error loading status file: {e}")
 
     def save(self):
-        """Saves the current status information to the status file."""
+        """Saves the current status information to the status file.
+
+        Uses atomic write (temp file + rename) to prevent data corruption
+        if the process crashes mid-write.
+        """
         instances = {}
         for instance in self.instances:
             instances[instance.name] = ({
@@ -156,8 +162,18 @@ class InstancesStatus():
             "instances": instances
         }
         file = Path(self.status_file)
-        with open(file, "w", encoding='utf-8') as f:
-            json.dump(status, f, indent=4)
+        file.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp_path = tempfile.mkstemp(dir=file.parent, suffix='.tmp')
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                json.dump(status, f, indent=4)
+            os.replace(tmp_path, file)
+        except Exception:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            raise
 
 
 def main():

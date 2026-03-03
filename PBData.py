@@ -6,11 +6,11 @@ import os
 from pathlib import Path, PurePath
 from time import sleep
 from io import TextIOWrapper
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import platform
 import traceback
 from pbgui_func import PBGDIR
-from pbgui_purefunc import save_ini
+from pbgui_purefunc import save_ini, rotate_service_log
 from Database import Database
 from User import Users
 import configparser
@@ -197,12 +197,27 @@ def main():
     pbdata.save_pid()
 
     async def run_loop():
+        last_prune_date = None
+        # Read retention_days from config, default 90
+        retention_days = 90
+        try:
+            pb_config = configparser.ConfigParser()
+            pb_config.read('pbgui.ini', encoding='utf-8')
+            if pb_config.has_option("pbdata", "history_retention_days"):
+                retention_days = int(pb_config.get("pbdata", "history_retention_days"))
+        except Exception:
+            pass
         while True:
             try:
-                if logfile.exists() and logfile.stat().st_size >= 10485760:
-                    logfile.replace(f'{str(logfile)}.old')
-                    sys.stdout = TextIOWrapper(open(logfile, "ab", 0), encoding='utf-8', write_through=True)
-                    sys.stderr = TextIOWrapper(open(logfile, "ab", 0), encoding='utf-8', write_through=True)
+                rotate_service_log(logfile)
+                # Prune old history records once per day
+                today = date.today()
+                if last_prune_date != today:
+                    cutoff_ms = int((datetime.now() - timedelta(days=retention_days)).timestamp() * 1000)
+                    deleted = pbdata.db.delete_income_older_than(['ALL'], cutoff_ms)
+                    if deleted:
+                        print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Pruned {deleted} history records older than {retention_days} days')
+                    last_prune_date = today
                 await pbdata.update_db_async()
                 await asyncio.sleep(1)
             except Exception as e:

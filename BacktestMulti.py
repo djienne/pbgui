@@ -141,6 +141,7 @@ class BacktestMultiQueueItem():
                 btm = subprocess.Popen(cmd, stdout=log, stderr=log, cwd=pbdir(), text=True, creationflags=creationflags)
             else:
                 btm = subprocess.Popen(cmd, stdout=log, stderr=log, cwd=pbdir(), text=True, start_new_session=True)
+            log.close()
             self.pid = btm.pid
             self.save_pid()
 
@@ -277,6 +278,7 @@ class BacktestMultiQueue:
                 subprocess.Popen(cmd, stdout=log, stderr=log, cwd=PBGDIR, text=True, creationflags=creationflags)
             else:
                 subprocess.Popen(cmd, stdout=log, stderr=log, cwd=PBGDIR, text=True, start_new_session=True)
+            log.close()
 
     def stop(self):
         if self.is_running():

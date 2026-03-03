@@ -14,7 +14,7 @@ import os
 import traceback
 from io import TextIOWrapper
 from Exchange import Exchange, Exchanges
-from pbgui_purefunc import save_ini_batch
+from pbgui_purefunc import save_ini_batch, rotate_service_log
 
 SYMBOLMAP = {
     #Binance
@@ -841,11 +841,7 @@ def main():
     while True:
         try:
             iteration += 1
-            if logfile.exists():
-                if logfile.stat().st_size >= 10485760:
-                    logfile.replace(f'{str(logfile)}.old')
-                    sys.stdout = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
-                    sys.stderr = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
+            rotate_service_log(logfile)
 
             # Log service heartbeat every 10 iterations (10 minutes)
             if iteration % 10 == 1:

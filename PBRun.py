@@ -24,7 +24,7 @@ import traceback
 import uuid
 from Status import InstanceStatus, InstancesStatus
 from PBCoinData import CoinData
-from pbgui_purefunc import save_ini
+from pbgui_purefunc import save_ini, rotate_service_log, prune_backups
 from constants import DEFAULT_MEM_WARNING_MB, FILE_SIZE_10MB
 import re
 
@@ -196,6 +196,11 @@ class Monitor():
 
     def save_monitor(self):
         monitor_file = Path(f'{self.path}/monitor.json')
+        # Cap traceback list to prevent unbounded growth within a day
+        MAX_TRACEBACK_LINES = 200
+        traceback_data = self.log_traceback
+        if traceback_data and len(traceback_data) > MAX_TRACEBACK_LINES:
+            traceback_data = traceback_data[-MAX_TRACEBACK_LINES:]
         monitor = ({
             # u = user
             # p = pb_version
@@ -228,7 +233,7 @@ class Monitor():
             "e": self.log_error,
             "et": self.errors_today,
             "ey": self.errors_yesterday,
-            "t": self.log_traceback,
+            "t": traceback_data,
             "tt": self.tracebacks_today,
             "ty": self.tracebacks_yesterday,
             "pt": self.pnl_today,
@@ -358,8 +363,13 @@ class RunSingle():
 
     def stop(self) -> None:
         if self.is_running():
+            p = self.pid()
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: {self.user} {self.symbol}')
-            self.pid().kill()
+            p.kill()
+            try:
+                p.wait(timeout=5)
+            except psutil.TimeoutExpired:
+                pass
 
     def start(self):
         if not self.is_running():
@@ -377,6 +387,7 @@ class RunSingle():
                 subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbdir, text=True, creationflags=creationflags)
             else:
                 subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbdir, text=True, start_new_session=True)
+            log.close()
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Start Single: {cmd_end}')
         # wait until passivbot is running
         for i in range(10):
@@ -536,8 +547,13 @@ class RunMulti():
 
     def stop(self) -> None:
         if self.is_running():
+            p = self.pid()
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: passivbot_multi.py {self.path}/multi_run.hjson')
-            self.pid().kill()
+            p.kill()
+            try:
+                p.wait(timeout=5)
+            except psutil.TimeoutExpired:
+                pass
 
     def start(self) -> None:
         if not self.is_running():
@@ -550,6 +566,7 @@ class RunMulti():
                 subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbdir, text=True, creationflags=creationflags)
             else:
                 subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbdir, text=True, start_new_session=True)
+            log.close()
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Start: passivbot_multi.py {self.path}/multi_run.hjson')
         # wait until passivbot is running
         for i in range(10):
@@ -685,24 +702,32 @@ class RunV7():
 
     def stop(self) -> None:
         if self.is_running():
+            p = self.pid()
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: passivbot v7 {self.path}/config_run.json')
-            self.pid().kill()
+            p.kill()
+            try:
+                p.wait(timeout=5)
+            except psutil.TimeoutExpired:
+                pass
 
     def start(self) -> None:
         if not self.is_running():
             old_os_path = os.environ.get('PATH', '')
             new_os_path = os.path.dirname(self.pbvenv) + os.pathsep + old_os_path
-            os.environ['PATH'] = new_os_path
-            cmd = [self.pbvenv, '-u', PurePath(f'{self.pbdir}/src/main.py'), PurePath(f'{self.path}/config_run.json')]
-            logfile = Path(f'{self.path}/passivbot.log')
-            log = open(logfile,"ab")
-            if platform.system() == "Windows":
-                creationflags = subprocess.DETACHED_PROCESS
-                creationflags |= subprocess.CREATE_NO_WINDOW
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbdir, text=True, creationflags=creationflags)
-            else:
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbdir, text=True, start_new_session=True)
-            os.environ['PATH'] = old_os_path
+            try:
+                os.environ['PATH'] = new_os_path
+                cmd = [self.pbvenv, '-u', PurePath(f'{self.pbdir}/src/main.py'), PurePath(f'{self.path}/config_run.json')]
+                logfile = Path(f'{self.path}/passivbot.log')
+                log = open(logfile,"ab")
+                if platform.system() == "Windows":
+                    creationflags = subprocess.DETACHED_PROCESS
+                    creationflags |= subprocess.CREATE_NO_WINDOW
+                    subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbdir, text=True, creationflags=creationflags)
+                else:
+                    subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbdir, text=True, start_new_session=True)
+                log.close()
+            finally:
+                os.environ['PATH'] = old_os_path
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Start: passivbot_v7 {self.path}/config_run.json')
         # wait until passivbot is running
         for i in range(10):
@@ -1187,6 +1212,7 @@ class PBRun():
                             if not destination.exists():
                                 destination.mkdir(parents=True)
                             copytree(source, destination, dirs_exist_ok=True, ignore=ignore_patterns('passivbot.log', 'passivbot.log.old', 'ignored_coins.json', 'approved_coins.json', 'config_run.json', 'monitor.json'))
+                            prune_backups(Path(f'{self.pbgdir}/data/backup/v7/{instance.name}'))
                         # Install new v7 version
                         print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Install: New V7 Version {instance.name} Old: {status.version} New: {instance.version}')
                         # Remove old *.json configs
@@ -1229,6 +1255,7 @@ class PBRun():
                         if not destination.exists():
                             destination.mkdir(parents=True)
                         copytree(source, destination, dirs_exist_ok=True, ignore=ignore_patterns('passivbot.log', 'passivbot.log.old', 'ignored_coins.json', 'approved_coins.json', 'config_run.json', 'monitor.json'))
+                        prune_backups(Path(f'{self.pbgdir}/data/backup/v7/{instance.name}'))
                         rmtree(source, ignore_errors=True)
                         remove_instances.append(instance)
             if remove_instances:
@@ -1263,6 +1290,7 @@ class PBRun():
                             if not destination.exists():
                                 destination.mkdir(parents=True)
                             copytree(source, destination, dirs_exist_ok=True, ignore=ignore_patterns('passivbot.log', 'passivbot.log.old', 'ignored_coins.json', 'approved_coins.json', 'config_run.json', 'monitor.json'))
+                            prune_backups(Path(f'{self.pbgdir}/data/backup/single/{instance.name}'))
                         # Install new single version
                         print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Install: New Single Version {instance.name} Old: {status.version} New: {instance.version}')
                         src = f'{self.pbgdir}/data/remote/instances_{rserver}/{instance.name}'
@@ -1298,6 +1326,7 @@ class PBRun():
                         if not destination.exists():
                             destination.mkdir(parents=True)
                         copytree(source, destination, dirs_exist_ok=True, ignore=ignore_patterns('passivbot.log', 'passivbot.log.old', 'ignored_coins.json', 'approved_coins.json', 'config_run.json', 'monitor.json'))
+                        prune_backups(Path(f'{self.pbgdir}/data/backup/single/{instance.name}'))
                         rmtree(source, ignore_errors=True)
                         remove_instances.append(instance)
             if remove_instances:
@@ -1332,6 +1361,7 @@ class PBRun():
                             if not destination.exists():
                                 destination.mkdir(parents=True)
                             copytree(source, destination, dirs_exist_ok=True, ignore=ignore_patterns('passivbot.log', 'passivbot.log.old', 'ignored_coins.json', 'approved_coins.json', 'config_run.json', 'monitor.json'))
+                            prune_backups(Path(f'{self.pbgdir}/data/backup/multi/{instance.name}'))
                         # Install new multi version
                         print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Install: New Multi Version {instance.name} Old: {status.version} New: {instance.version}')
                         # Remove old *.json configs
@@ -1373,6 +1403,7 @@ class PBRun():
                         if not destination.exists():
                             destination.mkdir(parents=True)
                         copytree(source, destination, dirs_exist_ok=True, ignore=ignore_patterns('passivbot.log', 'passivbot.log.old', 'ignored_coins.json', 'approved_coins.json', 'config_run.json', 'monitor.json'))
+                        prune_backups(Path(f'{self.pbgdir}/data/backup/multi/{instance.name}'))
                         rmtree(source, ignore_errors=True)
                         remove_instances.append(instance)
             if remove_instances:
@@ -1707,11 +1738,7 @@ def main():
     count = 0
     while True:
         try:
-            if logfile.exists():
-                if logfile.stat().st_size >= 1048576:
-                    logfile.replace(f'{str(logfile)}.old')
-                    sys.stdout = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
-                    sys.stderr = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
+            rotate_service_log(logfile)
             run.watch_memory()
             run.has_activate()
             run.has_update_status()

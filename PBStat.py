@@ -10,6 +10,7 @@ from Instance import Instances
 import platform
 import traceback
 import logging
+from pbgui_purefunc import rotate_service_log
 
 class PBStat(Instances):
     def __init__(self):
@@ -110,11 +111,7 @@ def main():
     trade_count = 0
     while True:
         try:
-            if logfile.exists():
-                if logfile.stat().st_size >= 10485760:
-                    logfile.replace(f'{str(logfile)}.old')
-                    sys.stdout = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
-                    sys.stderr = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
+            rotate_service_log(logfile)
             if trade_count%5 == 0:
                 stat.fetch_all()
             else:
