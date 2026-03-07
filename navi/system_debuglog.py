@@ -30,7 +30,7 @@ def log_viewer_page(max_display_lines=1000, refresh_interval_seconds=3):
 
     with col3:
         if os.path.exists(debuglog_path):
-            with open(debuglog_path, "r") as f:
+            with open(debuglog_path, "r", encoding="utf-8") as f:
                 log_content = f.read()
             st.download_button(
                 label="Download Log",
@@ -58,7 +58,7 @@ def log_viewer_page(max_display_lines=1000, refresh_interval_seconds=3):
 
     # Show the content of the log file
     if os.path.exists(debuglog_path):
-        with open(debuglog_path, "r") as f:
+        with open(debuglog_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
             if len(lines) > max_display_lines:
                 lines = lines[-max_display_lines:]

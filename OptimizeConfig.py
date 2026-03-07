@@ -1176,12 +1176,6 @@ class OptimizeConfigs:
 
     def __iter__(self):
         return iter(self.configs)
-
-    def __next__(self):
-        if self.index > len(self.configs):
-            raise StopIteration
-        self.index += 1
-        return next(self)
     
     def list(self):
         return list(map(lambda c: c.name, self.configs))

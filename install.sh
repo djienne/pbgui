@@ -102,5 +102,5 @@ echo ""
 echo "starting PBGui in background with command start_streamlit.sh"
 echo "starting PBGui Services in background with command start.sh"
 echo ""
-echo 'Login with password: PBGui$Bot!'
+echo 'Open PBGui and create the admin password on first login.'
 ./start_streamlit.sh

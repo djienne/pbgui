@@ -684,12 +684,15 @@ class Instance(Base):
                 size = 1.0
         else:
             size = 1.0
+        balance_display = "N/A" if balance is None else round(balance, 2)
         if self.market_type == "futures":
-            st.markdown(f'### Symbol: {self.symbol} {round(balance,2)} USDT')
+            st.markdown(f'### Symbol: {self.symbol} {balance_display} USDT')
         else: 
             symbol = self._symbol_ccxt.split('/')[0]
-            st.markdown(f'### Symbol: {self.symbol} {round(balance,2)} USDT')
-            st.markdown(f'### Asset: {spot_balance} {symbol} = {round(spot_balance*price,2)} USDT')
+            spot_display = "N/A" if spot_balance is None else spot_balance
+            spot_value = "N/A" if spot_balance is None else round(spot_balance * price, 2)
+            st.markdown(f'### Symbol: {self.symbol} {balance_display} USDT')
+            st.markdown(f'### Asset: {spot_display} {symbol} = {spot_value} USDT')
         # open/close orders
         # sort orders by price reversed
         orders = sorted(orders, key=lambda x: x["price"], reverse=True)
@@ -718,8 +721,8 @@ class Instance(Base):
             active_scroll="wheel_zoom")
         p.segment(x0=self._ohlcv_df["timestamp"], y0=self._ohlcv_df["high"], x1=self._ohlcv_df["timestamp"], y1=self._ohlcv_df["low"], color=self._ohlcv_df["color"])
         p.vbar(x=self._ohlcv_df["timestamp"], width=w, top=self._ohlcv_df["open"], bottom=self._ohlcv_df["close"], color=self._ohlcv_df["color"])
-        sys.path.insert(0,st.session_state.pbdir)
-        sys.path.insert(0,f'{st.session_state.pbdir}')
+        if st.session_state.pbdir not in sys.path:
+            sys.path.insert(0, st.session_state.pbdir)
         try:
             njit_funcs_recursive_grid = __import__("njit_funcs_recursive_grid")
             # njit_funcs = __import__("njit_funcs")
@@ -1037,12 +1040,6 @@ class Instances:
 
     def __iter__(self):
         return iter(self.instances)
-
-    def __next__(self):
-        if self.index > len(self.instances):
-            raise StopIteration
-        self.index += 1
-        return next(self)
     
     def list(self):
         return list(map(lambda c: c.user, self.instances))

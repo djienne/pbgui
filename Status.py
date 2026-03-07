@@ -9,6 +9,7 @@ This status list is then sent through PBRemote to the remote storage, enabling u
 """
 from pathlib import Path
 import json
+import os
 
 class InstanceStatus():
     """Stores information about one passivbot configuration."""
@@ -35,12 +36,6 @@ class InstancesStatus():
 
     def __iter__(self):
         return iter(self.instances)
-
-    def __next__(self):
-        if self.index > len(self.instances):
-            raise StopIteration
-        self.index += 1
-        return next(self)
 
     def list(self): # Never referenced ?
         """Returns a list of names of all the passivbot instances in the status list."""
@@ -128,7 +123,7 @@ class InstancesStatus():
                     instances = json.load(f)
                     if "activate_ts" in instances:
                         self.activate_ts = instances["activate_ts"]
-                        self.activate_pbname = instances["activate_pbname"]
+                        self.activate_pbname = instances.get("activate_pbname", "")
                         for instance in instances["instances"]:
                             status = InstanceStatus()
                             status.name = instance
@@ -156,8 +151,10 @@ class InstancesStatus():
             "instances": instances
         }
         file = Path(self.status_file)
-        with open(file, "w", encoding='utf-8') as f:
+        tmp_file = file.with_suffix('.tmp')
+        with open(tmp_file, "w", encoding='utf-8') as f:
             json.dump(status, f, indent=4)
+        os.replace(tmp_file, file)
 
 
 def main():

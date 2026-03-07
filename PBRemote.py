@@ -24,6 +24,7 @@ import hashlib
 import traceback
 import gzip
 from MonitorConfig import MonitorConfig
+from process_utils import run_logged_command, safe_process_cmdline
 
 
 class PBRemote():
@@ -80,7 +81,8 @@ class PBRemote():
                 print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: No passivbot directory configured in pbgui.ini')
                 exit(1)
             else:
-                print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: No passivbot directory configured in pbgui.ini')
+                self.error = "No passivbot directory configured in pbgui.ini"
+                print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: {self.error}')
                 return
         # Print Warning if only pbdir or pb7dir configured
         if not self.pbdir:
@@ -105,6 +107,7 @@ class PBRemote():
         self.bucket_secret_access_key = None
         self.bucket_provider = "Synology"
         self.bucket_region = None
+        self.sync_api_keys = False
         self.rclone_installed = self.is_rclone_installed()
         if not self.rclone_installed:
             if __name__ == '__main__':
@@ -177,6 +180,8 @@ class PBRemote():
     #unsynced api
     @property
     def unsynced_api(self):
+        if not self.sync_api_keys:
+            return 0
         unsynced = 0
         for server in self.remote_servers:
             server.load()
@@ -190,12 +195,6 @@ class PBRemote():
 
     def __iter__(self):
         return iter(self.remote_servers)
-
-    def __next__(self):
-        if self.index > len(self.remote_servers):
-            raise StopIteration
-        self.index += 1
-        return next(self)
 
     def list(self):
         return list(map(lambda c: c.name, self.remote_servers))
@@ -433,9 +432,8 @@ class PBRemote():
 
     def sync_pid(self):
         for process in psutil.process_iter():
-            try:
-                cmdline = process.cmdline()
-            except psutil.AccessDenied:
+            cmdline = safe_process_cmdline(process)
+            if not cmdline:
                 continue
             if any("rclone" in sub for sub in cmdline) and any(f'{self.bucket_dir}' in sub for sub in cmdline):
                 return process
@@ -473,7 +471,8 @@ class PBRemote():
         """
         pbgdir = Path.cwd()
         if direction == 'up' and spath == 'cmd':
-            cmd = ['rclone', 'sync', '-v', '--include', f'{{alive_*.cmd*,api-keys.json}}', PurePath(f'{pbgdir}/data/{spath}'), f'{self.bucket_dir}/{spath}_{self.name}']
+            include = '{alive_*.cmd*,api-keys.json}' if self.sync_api_keys else '{alive_*.cmd*}'
+            cmd = ['rclone', 'sync', '-v', '--include', include, PurePath(f'{pbgdir}/data/{spath}'), f'{self.bucket_dir}/{spath}_{self.name}']
         elif direction == 'up' and spath == 'instances':
             cmd = ['rclone', 'sync', '-v', '--include', f'{{instance.cfg,config.json}}', PurePath(f'{pbgdir}/data/{spath}'), f'{self.bucket_dir}/{spath}_{self.name}']
         elif direction == 'up' and spath == 'status':
@@ -495,12 +494,7 @@ class PBRemote():
             if logfile.stat().st_size >= 10485760:
                 logfile.replace(f'{pbgdir}/data/logs/sync.log.old')
                 logfile = Path(f'{pbgdir}/data/logs/sync.log')
-        log = open(logfile,"ab")
-        if platform.system() == "Windows":
-            creationflags = subprocess.CREATE_NO_WINDOW
-            subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True, creationflags=creationflags)
-        else:
-            subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True)
+        run_logged_command(cmd, pbgdir, logfile)
 
     def sync_status_down(self):
         if self.role == "master":
@@ -545,6 +539,10 @@ class PBRemote():
         """Takes the api-keys.json from passivbot folder to sync it to other remotes by putting it in data/cmd/api-keys.json."""
         pbgdir = Path.cwd()
         api_file = Path(f'{pbgdir}/data/cmd/api-keys.json')
+        if not self.sync_api_keys:
+            api_file.unlink(missing_ok=True)
+            print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} API sync disabled; skipping remote credential sync')
+            return False
         if self.pb7dir:
             source = Path(f'{self.pb7dir}/api-keys.json')
         elif self.pbdir:
@@ -552,15 +550,20 @@ class PBRemote():
         if source.exists():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Sync api-keys.json to all remote servers')
             shutil.copy(source, api_file)
+            return True
+        return False
     
     def check_if_api_synced(self):
         """Verify that the API keys are the same in PBGUI and PB folders and deletes PBGUI folder's file if api are synced."""
+        pbgdir = Path.cwd()
+        api_file = Path(f'{pbgdir}/data/cmd/api-keys.json')
+        if not self.sync_api_keys:
+            api_file.unlink(missing_ok=True)
+            return True
         for server in self.remote_servers:
             server.load()
             if not server.is_api_md5_same(self.api_md5):
                 return False
-        pbgdir = Path.cwd()
-        api_file = Path(f'{pbgdir}/data/cmd/api-keys.json')
         if api_file.exists():
             api_file.unlink(missing_ok=True)
         return True
@@ -742,7 +745,7 @@ class PBRemote():
         try:
             if self.my_pid and psutil.pid_exists(self.my_pid) and any(sub.lower().endswith("pbremote.py") for sub in psutil.Process(self.my_pid).cmdline()):
                 return True
-        except psutil.NoSuchProcess:
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
         return False
 
@@ -753,13 +756,13 @@ class PBRemote():
 
     def load_pid(self):
         if self.pidfile.exists():
-            with open(self.pidfile) as f:
+            with open(self.pidfile, encoding='utf-8') as f:
                 pid = f.read()
                 self.my_pid = int(pid) if pid.isnumeric() else None
 
     def save_pid(self):
         self.my_pid = os.getpid()
-        with open(self.pidfile, 'w') as f:
+        with open(self.pidfile, 'w', encoding='utf-8') as f:
             f.write(str(self.my_pid))
 
     def load_config(self):
@@ -771,6 +774,7 @@ class PBRemote():
                 self.bucket = pb_config.get("pbremote", "bucket")
             else:
                 self.bucket = None
+            self.sync_api_keys = pb_config.getboolean("pbremote", "sync_api_keys", fallback=False)
 
     def save_config(self):
         """Save the bucket name used in the remote storage in pbgui.ini."""
@@ -931,7 +935,8 @@ def main():
                 server.sync_v7_down(remote.role)
                 server.sync_multi_down()
                 server.sync_single_down()
-                server.sync_api()
+                if remote.sync_api_keys:
+                    server.sync_api()
         except Exception as e:
             print(f'Something went wrong, but continue {e}')
             traceback.print_exc()

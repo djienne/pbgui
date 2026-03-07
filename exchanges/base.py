@@ -137,6 +137,18 @@ class BaseExchange:
         except Exception as e:
             self.error = (str(e))
             return
+        self.error = None
+
+    def _fetch_balance_data(self, market_type: str):
+        if not self.instance:
+            self.connect()
+        try:
+            balance = self.instance.fetch_balance(params={"type": market_type})
+        except Exception as e:
+            self.error = str(e)
+            return None
+        self.error = None
+        return balance
 
     def fetch_ohlcv(self, symbol: str, market_type: str, timeframe: str, limit: int, since : int = None):
         if not self.instance: self.connect()
@@ -177,11 +189,9 @@ class BaseExchange:
         return positions
 
     def fetch_balance(self, market_type: str, symbol : str = None):
-        if not self.instance: self.connect()
-        try:
-            balance = self.instance.fetch_balance(params = {"type": market_type})
-        except Exception as e:
-            return e
+        balance = self._fetch_balance_data(market_type)
+        if balance is None:
+            return None
         return float(balance["total"]["USDT"])
 
     def fetch_timestamp(self):
@@ -271,17 +281,16 @@ class BaseExchange:
         # Default implementation
         if not self.instance:
             self.connect()
-            self._markets = self.instance.load_markets()
+        if not self._markets:
+            try:
+                self._markets = self.instance.load_markets()
+            except (ccxt.BaseError, Exception):
+                return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 
         # Convert from passivbot format (e.g., "SOLUSDT") to CCXT format (e.g., "SOL/USDT:USDT")
         if symbol.endswith('USDT') and '/' not in symbol:
             symbol = f'{symbol[0:-4]}/USDT:USDT'
 
-        if not self._markets:
-            try:
-                self._markets = self.instance.load_markets()
-            except (ccxt.BaseError, Exception) as e:
-                return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
         if symbol not in self._markets:
             return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
         symbol_info = self._markets[symbol]

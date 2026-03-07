@@ -26,6 +26,8 @@ def edit_user():
     in_use = instances.is_user_used(user.name)
     balance_futures = None
     balance_spot = None
+    balance_futures_error = None
+    balance_spot_error = None
     # Display Error
     if "error" in st.session_state:
         st.error(st.session_state.error, icon="🚨")
@@ -100,8 +102,10 @@ def edit_user():
         if st.button("Test"):
             exchange = Exchange(user.exchange, user)
             balance_futures = exchange.fetch_balance('swap')
+            balance_futures_error = exchange.error
             if exchange.name in Spot.list():
                 balance_spot = exchange.fetch_balance('spot')
+                balance_spot_error = exchange.error
 
     col_1, col_2, col_3 = st.columns([1,1,1],vertical_alignment="bottom")
     with col_1:
@@ -121,18 +125,18 @@ def edit_user():
             st.text_input("Passphrase", value=user.passphrase, type="password", key="api_passphrase", help=None)
     col_1, col_2, col_3 = st.columns([1,1,1],vertical_alignment="bottom")
     with col_1:
-        st.markdown(f'### <center>Futures Wallet Balance</center>', unsafe_allow_html=True)
+        st.markdown(f'### Futures Wallet Balance')
         if type(balance_futures) == float:
-            st.markdown(f'# <center>{balance_futures}</center>', unsafe_allow_html=True)
-        elif balance_futures:
-            st.error(balance_futures, icon="🚨")    
+            st.metric(label="Futures", value=balance_futures, label_visibility="collapsed")
+        elif balance_futures_error:
+            st.error(balance_futures_error, icon="🚨")
     with col_2:
         if user.exchange in Spot.list():
-            st.markdown(f'### <center>Spot Wallet Balance</center>', unsafe_allow_html=True)
+            st.markdown(f'### Spot Wallet Balance')
             if type(balance_spot) == float:
-                st.markdown(f'# <center>{balance_spot}</center>', unsafe_allow_html=True)
-            elif balance_spot:
-                st.error(balance_spot, icon="🚨")    
+                st.metric(label="Spot", value=balance_spot, label_visibility="collapsed")
+            elif balance_spot_error:
+                st.error(balance_spot_error, icon="🚨")
 
 def select_user():
     # Init

@@ -59,7 +59,10 @@ class PBData():
     def stop(self):
         if self.is_running():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: PBData')
-            psutil.Process(self.my_pid).kill()
+            try:
+                psutil.Process(self.my_pid).kill()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
             # Clean up PID file to avoid stale PID issues
             if self.pidfile.exists():
                 self.pidfile.unlink()
@@ -74,19 +77,19 @@ class PBData():
         try:
             if self.my_pid and psutil.pid_exists(self.my_pid) and any(sub.lower().endswith("pbdata.py") for sub in psutil.Process(self.my_pid).cmdline()):
                 return True
-        except psutil.NoSuchProcess:
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
         return False
 
     def load_pid(self):
         if self.pidfile.exists():
-            with open(self.pidfile) as f:
+            with open(self.pidfile, encoding='utf-8') as f:
                 pid = f.read()
                 self.my_pid = int(pid) if pid.isnumeric() else None
 
     def save_pid(self):
         self.my_pid = os.getpid()
-        with open(self.pidfile, 'w') as f:
+        with open(self.pidfile, 'w', encoding='utf-8') as f:
             f.write(str(self.my_pid))
     
     def load_fetch_users(self):
@@ -97,7 +100,11 @@ class PBData():
             print(f"{datetime.now().isoformat(sep=' ', timespec='seconds')} Warning: failed reading pbgui.ini ({e}); keeping previous fetch_users: {self._fetch_users}")
             return
         if pb_config.has_option("pbdata", "fetch_users"):
-            users = ast.literal_eval(pb_config.get("pbdata", "fetch_users"))
+            try:
+                users = ast.literal_eval(pb_config.get("pbdata", "fetch_users"))
+            except (ValueError, SyntaxError):
+                print(f"{datetime.now().isoformat(sep=' ', timespec='seconds')} Warning: malformed fetch_users in pbgui.ini; keeping previous: {self._fetch_users}")
+                return
             for user in users.copy():
                 if user not in self.users.list():
                     users.remove(user)
@@ -185,8 +192,10 @@ def main():
     if not dest.exists():
         dest.mkdir(parents=True)
     logfile = Path(f'{str(dest)}/PBData.log')
-    sys.stdout = TextIOWrapper(open(logfile, "ab", 0), encoding='utf-8', write_through=True)
-    sys.stderr = TextIOWrapper(open(logfile, "ab", 0), encoding='utf-8', write_through=True)
+    _log_out = open(logfile, "ab", 0)
+    sys.stdout = TextIOWrapper(_log_out, encoding='utf-8', write_through=True)
+    _log_err = open(logfile, "ab", 0)
+    sys.stderr = TextIOWrapper(_log_err, encoding='utf-8', write_through=True)
     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Start: PBData')
     pbdata = PBData()
     if pbdata.is_running():
@@ -201,8 +210,16 @@ def main():
             try:
                 if logfile.exists() and logfile.stat().st_size >= 10485760:
                     logfile.replace(f'{str(logfile)}.old')
-                    sys.stdout = TextIOWrapper(open(logfile, "ab", 0), encoding='utf-8', write_through=True)
-                    sys.stderr = TextIOWrapper(open(logfile, "ab", 0), encoding='utf-8', write_through=True)
+                    old_stdout, old_stderr = sys.stdout, sys.stderr
+                    _log_out = open(logfile, "ab", 0)
+                    sys.stdout = TextIOWrapper(_log_out, encoding='utf-8', write_through=True)
+                    _log_err = open(logfile, "ab", 0)
+                    sys.stderr = TextIOWrapper(_log_err, encoding='utf-8', write_through=True)
+                    try:
+                        old_stdout.close()
+                        old_stderr.close()
+                    except Exception:
+                        pass
                 await pbdata.update_db_async()
                 await asyncio.sleep(1)
             except Exception as e:

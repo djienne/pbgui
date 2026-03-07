@@ -184,7 +184,7 @@ def pbremote_details():
         for rserver in sorted(st.session_state.pbremote.remote_servers, key=lambda s: s.name):
             if rserver.is_online():
                 color = "green"
-                if not rserver.is_api_md5_same(pbremote.api_md5):
+                if pbremote.sync_api_keys and not rserver.is_api_md5_same(pbremote.api_md5):
                     api_sync.append(rserver)
             else: color = "red"
             col1, col2 = st.columns([3, 1])
@@ -200,7 +200,8 @@ def pbremote_details():
                         rserver.delete_server()
                         pbremote.update_remote_servers()
                         st.rerun()
-        sync_api()
+        if pbremote.sync_api_keys:
+            sync_api()
                 
     st.subheader("PBRemote Details")
     pbremote_overview()

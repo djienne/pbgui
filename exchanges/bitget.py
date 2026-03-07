@@ -7,11 +7,9 @@ class Bitget(BaseExchange):
         super().__init__("bitget", user)
 
     def fetch_balance(self, market_type: str, symbol: str = None):
-        if not self.instance: self.connect()
-        try:
-            balance = self.instance.fetch_balance(params={"type": market_type})
-        except Exception as e:
-            return e
+        balance = self._fetch_balance_data(market_type)
+        if balance is None:
+            return None
         return float(balance["info"][0]["available"])
 
     def fetch_history(self, since: int = None):

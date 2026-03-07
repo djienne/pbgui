@@ -99,6 +99,8 @@ class CoinData:
         self.ini_ts = 0
         self.load_config()
         self.data = None
+        self._coin_by_symbol = {}
+        self._session = None
         self.metadata = None
         self.data_ts = 0
         self.metadata_ts = 0
@@ -115,13 +117,31 @@ class CoinData:
         self.approved_coins = []
         self.ignored_coins = []
         self._all_tags = []
+        self._all_tags_set = set()
         self._tags = []
         self.load_symbols()
         self._market_cap = 0
         self._vol_mcap = 10.0
         self._only_cpt = False
         self._notices_ignore = False
-    
+
+    def _build_coin_index(self):
+        """Build a symbol->coin lookup dict for O(1) access."""
+        if self.data and "data" in self.data:
+            self._coin_by_symbol = {coin["symbol"]: coin for coin in self.data["data"]}
+        else:
+            self._coin_by_symbol = {}
+
+    def _get_session(self):
+        """Get or create a reusable requests.Session with API headers."""
+        if self._session is None:
+            self._session = Session()
+        self._session.headers.update({
+            'Accepts': 'application/json',
+            'X-CMC_PRO_API_KEY': self.api_key,
+        })
+        return self._session
+
     @property
     def api_key(self):
         return self._api_key
@@ -270,10 +290,19 @@ class CoinData:
     def stop(self):
         if self.is_running():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: PBCoinData')
-            psutil.Process(self.my_pid).kill()
+            try:
+                psutil.Process(self.my_pid).kill()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
             # Clean up PID file to avoid stale PID issues
             if self.pidfile.exists():
                 self.pidfile.unlink()
+        if self._session:
+            try:
+                self._session.close()
+            except Exception:
+                pass
+            self._session = None
 
     def restart(self):
         if self.is_running():
@@ -285,7 +314,7 @@ class CoinData:
         try:
             if self.my_pid and psutil.pid_exists(self.my_pid) and any(sub.lower().endswith("pbcoindata.py") for sub in psutil.Process(self.my_pid).cmdline()):
                 return True
-        except psutil.NoSuchProcess:
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
         return False
 
@@ -356,12 +385,7 @@ class CoinData:
 
     def fetch_api_status(self):
         url = 'https://pro-api.coinmarketcap.com/v1/key/info'
-        headers = {
-            'Accepts': 'application/json',
-            'X-CMC_PRO_API_KEY': self.api_key,
-        }
-        session = Session()
-        session.headers.update(headers)
+        session = self._get_session()
         try:
             response = session.get(url)
             if response.status_code == 200:
@@ -391,17 +415,13 @@ class CoinData:
             'limit':self.fetch_limit
         }
         print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: Fetching coin data - URL: {url}, Limit: {self.fetch_limit}')
-        headers = {
-            'Accepts': 'application/json',
-            'X-CMC_PRO_API_KEY': self.api_key,
-        }
-        session = Session()
-        session.headers.update(headers)
+        session = self._get_session()
         try:
             response = session.get(url, params=parameters)
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: Response status: {response.status_code}')
             if response.status_code == 200:
                 self.data = json.loads(response.text)
+                self._build_coin_index()
                 self.fetch_api_status()
                 print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Fetched CoinMarketCap data. Credits left this month: {self.credits_left}')
                 return True
@@ -455,18 +475,15 @@ class CoinData:
             sym = symbol[0:-4]
             if sym in SYMBOLMAP:
                 sym = SYMBOLMAP[sym]
-            found = False
-            for coin in self.data["data"]:
-                if coin["symbol"] == sym:
-                    symbols_ids.append(coin["id"])
-                    found = True
-                    if len(matched_symbol_examples) < 5:
-                        try:
-                            matched_symbol_examples.append(f'{symbol}->{sym}->{coin["id"]}')
-                        except Exception:
-                            matched_symbol_examples.append(f'{symbol}->{sym}->?')
-                    break
-            if not found and len(missing_symbol_examples) < 5:
+            coin = self._coin_by_symbol.get(sym)
+            if coin:
+                symbols_ids.append(coin["id"])
+                if len(matched_symbol_examples) < 5:
+                    try:
+                        matched_symbol_examples.append(f'{symbol}->{sym}->{coin["id"]}')
+                    except Exception:
+                        matched_symbol_examples.append(f'{symbol}->{sym}->?')
+            elif len(missing_symbol_examples) < 5:
                 missing_symbol_examples.append(f'{symbol}->{sym}')
         # filter out duplicate ids
         symbols_ids = list(set(symbols_ids))
@@ -491,12 +508,7 @@ class CoinData:
         parameters = {
             'id': id_string
         }
-        headers = {
-            'Accepts': 'application/json',
-            'X-CMC_PRO_API_KEY': self.api_key,
-        }
-        session = Session()
-        session.headers.update(headers)
+        session = self._get_session()
         try:
             response = session.get(url, params=parameters)
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} DEBUG: Metadata response status: {response.status_code}')
@@ -579,6 +591,7 @@ class CoinData:
                 try:
                     with Path(f'{coin_path}/coindata.json').open('r', encoding='utf-8') as f:
                         self.data = json.load(f)
+                        self._build_coin_index()
                         self.data_ts = data_ts
                         return
                 except Exception as e:
@@ -729,21 +742,27 @@ class CoinData:
         self.approved_coins = []
         self.ignored_coins = []
         coin_data = []
+        # Also build a lookup for the special NEIROETH case
+        neiroeth_coin = None
+        for c in self.data["data"]:
+            if c["id"] == 32461:
+                neiroeth_coin = c
+                break
         for symbol in self.symbols:
             market_cap = 0
             sym = symbol[0:-4]
             if sym in SYMBOLMAP:
                 sym = SYMBOLMAP[sym]
-            for id, coin in enumerate(self.data["data"]):
-                if coin["symbol"] == sym or (sym == "NEIROETH" and coin["id"] == 32461):
-                    if coin["quote"]["USD"]["market_cap"]:
-                        coin_data = coin
-                        market_cap = coin["quote"]["USD"]["market_cap"]
-                        break
-                    elif coin["self_reported_market_cap"]:
-                        coin_data = coin
-                        market_cap = coin["self_reported_market_cap"]
-                        break
+            coin = self._coin_by_symbol.get(sym)
+            if not coin and sym == "NEIROETH" and neiroeth_coin:
+                coin = neiroeth_coin
+            if coin:
+                if coin["quote"]["USD"]["market_cap"]:
+                    coin_data = coin
+                    market_cap = coin["quote"]["USD"]["market_cap"]
+                elif coin["self_reported_market_cap"]:
+                    coin_data = coin
+                    market_cap = coin["self_reported_market_cap"]
             if symbol not in self._symbols_data:
                 if market_cap > 0:
                     notice = None
@@ -782,7 +801,8 @@ class CoinData:
                         "link": None,
                     }
                 for tag in symbol_data["tags"]:
-                    if tag not in self._all_tags:
+                    if tag not in self._all_tags_set:
+                        self._all_tags_set.add(tag)
                         self._all_tags.append(tag)
                 cpt = True
                 if self.only_cpt and not symbol_data["copy_trading"]:
@@ -809,15 +829,15 @@ class CoinData:
             sym = symbol[0:-4]
             if sym in SYMBOLMAP:
                 sym = SYMBOLMAP[sym]
-            for coin in self.data["data"]:
-                if coin["symbol"] == sym:
-                    if coin["quote"]["USD"]["market_cap"] and coin["quote"]["USD"]["market_cap"] > mc:
-                        approved_coins.append(symbol)
-                        break
-                    elif coin["self_reported_market_cap"] and coin["self_reported_market_cap"] > mc:
-                        approved_coins.append(symbol)
-                        break
-            if symbol not in approved_coins:
+            coin = self._coin_by_symbol.get(sym)
+            if coin:
+                if coin["quote"]["USD"]["market_cap"] and coin["quote"]["USD"]["market_cap"] > mc:
+                    approved_coins.append(symbol)
+                elif coin["self_reported_market_cap"] and coin["self_reported_market_cap"] > mc:
+                    approved_coins.append(symbol)
+                else:
+                    ignored_coins.append(symbol)
+            else:
                 ignored_coins.append(symbol)
         return approved_coins, ignored_coins
 
@@ -827,8 +847,10 @@ def main():
     if not dest.exists():
         dest.mkdir(parents=True)
     logfile = Path(f'{str(dest)}/PBCoinData.log')
-    sys.stdout = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
-    sys.stderr = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
+    _log_out = open(logfile, "ab", 0)
+    sys.stdout = TextIOWrapper(_log_out, encoding='utf-8', write_through=True)
+    _log_err = open(logfile, "ab", 0)
+    sys.stderr = TextIOWrapper(_log_err, encoding='utf-8', write_through=True)
     print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Start: PBCoinData')
     pbcoindata = CoinData()
     if pbcoindata.is_running():
@@ -844,8 +866,16 @@ def main():
             if logfile.exists():
                 if logfile.stat().st_size >= 10485760:
                     logfile.replace(f'{str(logfile)}.old')
-                    sys.stdout = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
-                    sys.stderr = TextIOWrapper(open(logfile,"ab",0), encoding='utf-8', write_through=True)
+                    old_stdout, old_stderr = sys.stdout, sys.stderr
+                    _log_out = open(logfile, "ab", 0)
+                    sys.stdout = TextIOWrapper(_log_out, encoding='utf-8', write_through=True)
+                    _log_err = open(logfile, "ab", 0)
+                    sys.stderr = TextIOWrapper(_log_err, encoding='utf-8', write_through=True)
+                    try:
+                        old_stdout.close()
+                        old_stderr.close()
+                    except Exception:
+                        pass
 
             # Log service heartbeat every 10 iterations (10 minutes)
             if iteration % 10 == 1:

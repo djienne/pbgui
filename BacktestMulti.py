@@ -27,6 +27,7 @@ from User import Users
 from shutil import rmtree
 import datetime
 import logging
+from process_utils import launch_logged_process, safe_process_cmdline
 
 class BacktestMultiQueueItem():
     def __init__(self):
@@ -118,12 +119,12 @@ class BacktestMultiQueueItem():
 
     def load_pid(self):
         if self.pidfile.exists():
-            with open(self.pidfile) as f:
+            with open(self.pidfile, encoding='utf-8') as f:
                 pid = f.read()
                 self.pid = int(pid) if pid.isnumeric() else None
 
     def save_pid(self):
-        with open(self.pidfile, 'w') as f:
+        with open(self.pidfile, 'w', encoding='utf-8') as f:
             f.write(str(self.pid))
 
     def run(self):
@@ -134,13 +135,7 @@ class BacktestMultiQueueItem():
                 cmd.extend(['-bc', self.hjson])
             else:
                 cmd = [pbvenv(), '-u', PurePath(f'{pbdir()}/backtest_multi.py'), '-bc', str(PurePath(f'{self.hjson}'))]
-            log = open(self.log,"w")
-            if platform.system() == "Windows":
-                creationflags = subprocess.DETACHED_PROCESS
-                creationflags |= subprocess.CREATE_NO_WINDOW
-                btm = subprocess.Popen(cmd, stdout=log, stderr=log, cwd=pbdir(), text=True, creationflags=creationflags)
-            else:
-                btm = subprocess.Popen(cmd, stdout=log, stderr=log, cwd=pbdir(), text=True, start_new_session=True)
+            btm = launch_logged_process(cmd, pbdir(), self.log, mode="w")
             self.pid = btm.pid
             self.save_pid()
 
@@ -270,13 +265,7 @@ class BacktestMultiQueue:
             if logfile.exists():
                 if logfile.stat().st_size >= 1048576:
                     logfile.replace(f'{str(logfile)}.old')
-            log = open(logfile,"a")
-            if platform.system() == "Windows":
-                creationflags = subprocess.DETACHED_PROCESS
-                creationflags |= subprocess.CREATE_NO_WINDOW
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=PBGDIR, text=True, creationflags=creationflags)
-            else:
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=PBGDIR, text=True, start_new_session=True)
+            launch_logged_process(cmd, PBGDIR, logfile)
 
     def stop(self):
         if self.is_running():
@@ -289,9 +278,8 @@ class BacktestMultiQueue:
 
     def pid(self):
         for process in psutil.process_iter():
-            try:
-                cmdline = process.cmdline()
-            except psutil.AccessDenied:
+            cmdline = safe_process_cmdline(process)
+            if not cmdline:
                 continue
             if any("BacktestMulti.py" in sub for sub in cmdline):
                 return process

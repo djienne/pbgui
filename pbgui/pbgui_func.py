@@ -7,12 +7,21 @@ import uuid
 import requests
 import configparser
 import os
-from time import sleep
+import hashlib
+import hmac
+import secrets
+from time import sleep, time
 from pathlib import Path
 from pbgui_purefunc import load_ini, save_ini
 from Log import LogHandler
 from PBRemote import PBRemote
 from MonitorConfig import MonitorConfig
+import toml
+
+AUTH_PASSWORD_KEY = "password"
+AUTH_PASSWORD_HASH_KEY = "password_hash"
+AUTH_HASH_SCHEME = "pbkdf2_sha256"
+AUTH_HASH_ITERATIONS = 390000
 
 def open_native_file_dialog(initial_dir=".", title="Select File", filetypes=None):
     """
@@ -200,31 +209,141 @@ def is_authenticted():
             return True   
     return False
 
-def check_password():
-    # if secrets file is missing, crate it with password = "PBGui$Data!"
-    secrets_path = Path(".streamlit/secrets.toml")
-    if not secrets_path.exists():
-        with open(secrets_path, "w") as f:
-            f.write('password = "PBGui$Bot!"')
+def _auth_secrets_path() -> Path:
+    return Path(".streamlit/secrets.toml")
 
-    """Returns `True` if the user had the correct password."""
-    if "password" in st.secrets:
-        if st.secrets["password"] == "":
-            st.session_state["password_correct"] = True
-            st.session_state["password_missing"] = True
-            return True
-    else:
-        st.session_state["password_correct"] = True
-        st.session_state["password_missing"] = True
-        return True
-    
+
+def _load_auth_settings():
+    secrets_path = _auth_secrets_path()
+    if not secrets_path.exists():
+        return {}, None
+    try:
+        with secrets_path.open("r", encoding="utf-8") as file:
+            return toml.load(file), None
+    except (OSError, toml.TomlDecodeError) as exc:
+        return {}, str(exc)
+
+
+def _write_auth_settings(settings: dict):
+    secrets_path = _auth_secrets_path()
+    secrets_path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = secrets_path.with_suffix(".toml.tmp")
+    with temp_path.open("w", encoding="utf-8") as file:
+        toml.dump(settings, file)
+    os.replace(temp_path, secrets_path)
+
+
+def hash_auth_password(password: str, *, salt: str = None, iterations: int = AUTH_HASH_ITERATIONS) -> str:
+    if not password:
+        raise ValueError("Password can not be empty")
+    salt = salt or secrets.token_hex(16)
+    derived_key = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt.encode("utf-8"),
+        iterations,
+    )
+    return f"{AUTH_HASH_SCHEME}${iterations}${salt}${derived_key.hex()}"
+
+
+def verify_password_hash(password: str, password_hash: str) -> bool:
+    try:
+        scheme, iterations, salt, expected = password_hash.split("$", 3)
+        iterations = int(iterations)
+    except ValueError:
+        return False
+    if scheme != AUTH_HASH_SCHEME:
+        return False
+    candidate = hash_auth_password(password, salt=salt, iterations=iterations)
+    return hmac.compare_digest(candidate, password_hash)
+
+
+def auth_is_configured() -> bool:
+    settings, error = _load_auth_settings()
+    if error:
+        return False
+    return bool(settings.get(AUTH_PASSWORD_HASH_KEY) or settings.get(AUTH_PASSWORD_KEY))
+
+
+def set_auth_password(password: str):
+    settings, _ = _load_auth_settings()
+    settings[AUTH_PASSWORD_HASH_KEY] = hash_auth_password(password)
+    settings.pop(AUTH_PASSWORD_KEY, None)
+    _write_auth_settings(settings)
+
+
+def verify_auth_password(password: str) -> bool:
+    settings, error = _load_auth_settings()
+    if error:
+        return False
+
+    password_hash = settings.get(AUTH_PASSWORD_HASH_KEY)
+    if password_hash:
+        return verify_password_hash(password, password_hash)
+
+    return False
+
+
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_COOLDOWN_SECONDS = 30
+
+def check_password():
     def password_entered():
         """Checks whether a password entered by the user is correct."""
-        if st.session_state["password"] == st.secrets["password"]:
+        # Rate limiting: check cooldown
+        failed = st.session_state.get("login_failed_attempts", 0)
+        last_fail = st.session_state.get("login_last_failed_time", 0)
+        if failed >= LOGIN_MAX_ATTEMPTS:
+            elapsed = time() - last_fail
+            if elapsed < LOGIN_COOLDOWN_SECONDS:
+                st.session_state["password_correct"] = False
+                return
+            # Cooldown expired, reset
+            st.session_state["login_failed_attempts"] = 0
+
+        if verify_auth_password(st.session_state.get("password", "")):
             st.session_state["password_correct"] = True
-            del st.session_state["password"]  # don't store password
+            st.session_state.pop("password", None)
+            st.session_state.pop("login_failed_attempts", None)
+            st.session_state.pop("login_last_failed_time", None)
         else:
             st.session_state["password_correct"] = False
+            st.session_state["login_failed_attempts"] = st.session_state.get("login_failed_attempts", 0) + 1
+            st.session_state["login_last_failed_time"] = time()
+
+    settings, error = _load_auth_settings()
+    if error or not (settings.get(AUTH_PASSWORD_HASH_KEY) or settings.get(AUTH_PASSWORD_KEY)):
+        st.session_state["password_correct"] = False
+        st.session_state["password_missing"] = True
+        if error:
+            st.error(f"Authentication config is invalid: {error}")
+        else:
+            st.warning("PBGUI requires an admin password before it can be used.")
+        with st.form("setup_password_form"):
+            new_password = st.text_input(
+                "Create Admin Password",
+                type="password",
+                autocomplete="new-password",
+            )
+            confirm_password = st.text_input(
+                "Confirm Admin Password",
+                type="password",
+                autocomplete="new-password",
+            )
+            submit_setup = st.form_submit_button("Save Password")
+        if submit_setup:
+            if not new_password:
+                st.error("Password can not be empty.")
+            elif new_password != confirm_password:
+                st.error("Passwords do not match.")
+            else:
+                set_auth_password(new_password)
+                st.success("Password saved. Please log in.")
+                st.session_state.clear()
+                st.rerun()
+        return False
+
+    st.session_state.pop("password_missing", None)
 
     if "password_correct" not in st.session_state:
         # First run, show input for password.
@@ -235,10 +354,17 @@ def check_password():
         return False
     elif not st.session_state["password_correct"]:
         # Password not correct, show input + error.
+        failed = st.session_state.get("login_failed_attempts", 0)
+        last_fail = st.session_state.get("login_last_failed_time", 0)
+        if failed >= LOGIN_MAX_ATTEMPTS:
+            remaining = LOGIN_COOLDOWN_SECONDS - (time() - last_fail)
+            if remaining > 0:
+                st.error(f"Too many failed attempts. Try again in {int(remaining)} seconds.")
+                return False
         st.text_input(
             "Password", type="password", on_change=password_entered, key="password", autocomplete="current-password"
         )
-        st.error("😕 Password incorrect")
+        st.error("Password incorrect")
         return False
     else:
         # Password correct.
@@ -452,6 +578,9 @@ def st_file_selector(st_placeholder, path='.', label='Select a file/folder', key
 
 def sync_api():
     pbremote = st.session_state.pbremote
+    if not getattr(pbremote, "sync_api_keys", False):
+        st.info("Remote API key sync is disabled.")
+        return
     if not pbremote.check_if_api_synced():
         st.warning('API not in sync')
         if st.button("Sync API"):

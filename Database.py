@@ -6,6 +6,9 @@ from pbgui_func import PBGDIR
 import shutil
 import sqlite3
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Database():
     def __init__(self):
@@ -37,7 +40,7 @@ class Database():
                 pass
             return str(backup_path)
         except Exception as e:
-            print(e)
+            logger.error(f"Database error: {e}")
             return None
 
     # Restore DB from a given backup file path
@@ -50,7 +53,7 @@ class Database():
             shutil.copy2(src, self.db)
             return True
         except Exception as e:
-            print(e)
+            logger.error(f"Database error: {e}")
             return False
 
     # --- Change-detection helpers removed: fragments auto-refresh panels ---
@@ -98,6 +101,18 @@ class Database():
                     user TEXT NOT NULL UNIQUE
             );"""
             ]
+        index_statements = [
+            """CREATE INDEX IF NOT EXISTS idx_history_user_timestamp
+                    ON history(user, timestamp);""",
+            """CREATE INDEX IF NOT EXISTS idx_history_symbol_timestamp
+                    ON history(symbol, timestamp);""",
+            """CREATE INDEX IF NOT EXISTS idx_position_user_symbol_side
+                    ON position(user, symbol, side);""",
+            """CREATE INDEX IF NOT EXISTS idx_orders_user_symbol_uniqueid
+                    ON orders(user, symbol, uniqueid);""",
+            """CREATE INDEX IF NOT EXISTS idx_prices_user_symbol
+                    ON prices(user, symbol);"""
+            ]
         # create a database connection
         try:
             with sqlite3.connect(self.db) as conn:
@@ -116,8 +131,12 @@ class Database():
                     # Update existing records in the 'position' table to set 'side' to 'long'
                     cursor.execute("UPDATE position SET side = 'long';")
                     conn.commit()
+                for statement in index_statements:
+                    cursor.execute(statement)
+                conn.commit()
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
+            return []
 
     def update_history(self, user: User):
         history = self.fetch_history(user)
@@ -133,20 +152,21 @@ class Database():
                     ]
                     self.add_history(conn, income)
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
+            return []
     
     def update_positions(self, user: User):
         positions_db = self.fetch_positions(user)
         exchange = Exchange(user.exchange, user)
         positions = exchange.fetch_positions()
-        symbols = []
+        symbols = set()
         for position in positions:
             if position['contracts'] == 0:
                 continue
-            symbols.append([position['symbol'][0:-5].replace("/", "").replace("-", ""), position['side']])
-        symbols_db = []
+            symbols.add((position['symbol'][0:-5].replace("/", "").replace("-", ""), position['side']))
+        symbols_db = set()
         for position in positions_db:
-            symbols_db.append([position[1], position[7]])
+            symbols_db.add((position[1], position[7]))
         try:
             with sqlite3.connect(self.db) as conn:
                 # Remove positions that are not in the exchange
@@ -186,7 +206,8 @@ class Database():
                     #     print(f"Adding {pos[4]}")
                     #     self.add_position(conn, pos)
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
+            return []
     
     def update_orders(self, user: User):
         positions_db = self.fetch_positions(user)
@@ -228,7 +249,8 @@ class Database():
                         print(f"Adding {ord[4]}")
                         self.add_order(conn, ord)
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
+            return []
 
     def update_prices(self, user: User):
         positions_db = self.fetch_positions(user)
@@ -282,12 +304,16 @@ class Database():
                         print(f"Adding {symbol}")
                         self.add_price(conn, price)
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
+            return 0
 
     def update_balances(self, user: User):
         exchange = Exchange(user.exchange, user)
         market_type = "swap"
         balance = exchange.fetch_balance(market_type)
+        if balance is None:
+            print(f"Skipping balance update for {user.name}: {exchange.error or 'unknown error'}")
+            return
         try:
             with sqlite3.connect(self.db) as conn:
                 balance_list = [
@@ -298,7 +324,7 @@ class Database():
                 print(f"Updating balance {user.name}")
                 self.update_balance(conn, balance_list)
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
 
     def add_history(self, conn: sqlite3.Connection, history: list):
         sql = '''INSERT INTO history(symbol,timestamp,income,uniqueid,user)
@@ -348,7 +374,7 @@ class Database():
             cur.execute(sql, [id])
             conn.commit()
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
     
     def remove_order(self, conn: sqlite3.Connection, id: int):
         sql = '''DELETE FROM orders WHERE id = ? '''
@@ -357,7 +383,7 @@ class Database():
             cur.execute(sql, [id])
             conn.commit()
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
 
     def remove_price(self, conn: sqlite3.Connection, symbol: str, user: str):
         sql = '''DELETE FROM prices WHERE symbol = ? AND user = ? '''
@@ -366,7 +392,7 @@ class Database():
             cur.execute(sql, [symbol, user])
             conn.commit()
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
 
     def update_position(self, conn: sqlite3.Connection, position: list):
         sql = '''UPDATE position
@@ -374,7 +400,7 @@ class Database():
                     psize = ?,
                     upnl = ?,
                     entry = ?
-                WHERE symbol = ? AND user = ? '''
+                WHERE symbol = ? AND user = ? AND side = ? '''
         try:
             cur = conn.cursor()
             cur.execute(sql, position)
@@ -432,7 +458,7 @@ class Database():
                 rows = cur.fetchall()
                 return rows
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
 
     def fetch_orders(self, user: User):
         sql = '''SELECT * FROM "orders"
@@ -444,7 +470,7 @@ class Database():
                 rows = cur.fetchall()
                 return rows
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
     
     def fetch_orders_by_symbol(self, user: str, symbol: str):
         sql = '''SELECT * FROM "orders"
@@ -457,7 +483,7 @@ class Database():
                 rows = cur.fetchall()
                 return rows
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
 
     def fetch_prices(self, user: User):
         sql = '''SELECT * FROM "prices"
@@ -469,7 +495,7 @@ class Database():
                 rows = cur.fetchall()
                 return rows
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
 
     def fetch_balances(self, user: list):
         sql = '''SELECT * FROM "balances"
@@ -481,7 +507,7 @@ class Database():
                 rows = cur.fetchall()
                 return rows
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
 
     def select_top(self, user: list, start: str, end: str, top: int):
         if 'ALL' in user:
@@ -508,7 +534,7 @@ class Database():
                 rows = cur.fetchall()
                 return rows
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
         
     def select_pnl(self, user: list, start: str, end: str):
         if 'ALL' in user:
@@ -531,7 +557,7 @@ class Database():
                 rows = cur.fetchall()
                 return rows
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
     
     def select_ppl(self, user: list, start: str, end: str, sum_period: str):
     # Define date formats for different sum_period values
@@ -583,7 +609,7 @@ class Database():
                 rows = cur.fetchall()
                 return rows
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
 
     def select_income(self, user: list, start: str, end: str):
         if 'ALL' in user:
@@ -606,7 +632,7 @@ class Database():
                 rows = cur.fetchall()
                 return rows
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
     
     # select income grouped by symbol not sum
     def select_income_by_symbol(self, user: list, start: str, end: str):
@@ -630,7 +656,7 @@ class Database():
                 rows = cur.fetchall()
                 return rows
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
 
     # Same as select_income_by_symbol but includes row id for deletion mapping
     def select_income_by_symbol_with_id(self, user: list, start: str, end: str):
@@ -654,7 +680,7 @@ class Database():
                 rows = cur.fetchall()
                 return rows
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
 
     # Delete specific income rows by primary key ids
     def delete_income_by_ids(self, ids: list):
@@ -669,7 +695,7 @@ class Database():
                 conn.commit()
                 return cur.rowcount
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
             return 0
 
     # Delete all income rows for a user older than or equal to a timestamp (ms)
@@ -682,7 +708,7 @@ class Database():
                 conn.commit()
                 return cur.rowcount
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
             return 0
 
     # Delete all income rows older than or equal to a timestamp for given users list.
@@ -701,7 +727,7 @@ class Database():
                 conn.commit()
                 return cur.rowcount
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
             return 0
 
     def find_last_timestamp(self, user: User):
@@ -716,7 +742,7 @@ class Database():
                     return 0
                 return rows[0][0]
         except sqlite3.Error as e:
-            print(e)
+            logger.error(f"Database error: {e}")
 
     def fetch_history2(self, user: User):
         exchange = Exchange(user.exchange, user)
@@ -746,7 +772,7 @@ class Database():
                             ]
                             self.add_history(conn, income)
                     except sqlite3.Error as e:
-                        print(e)
+                        logger.error(f"Database error: {e}")
                 else:
                     print("not import")
                     print(item)

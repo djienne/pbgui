@@ -673,12 +673,6 @@ class V7Instances:
 
     def __iter__(self):
         return iter(self.instances)
-
-    def __next__(self):
-        if self.index > len(self.instances):
-            raise StopIteration
-        self.index += 1
-        return next(self)
     
     def list(self):
         return list(map(lambda c: c.user, self.instances))

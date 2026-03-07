@@ -1,3 +1,5 @@
+import ccxt
+
 from .base import BaseExchange
 from datetime import datetime
 import json
@@ -46,11 +48,9 @@ class Hyperliquid(BaseExchange):
         return prices
 
     def fetch_balance(self, market_type: str, symbol: str = None):
-        if not self.instance: self.connect()
-        try:
-            balance = self.instance.fetch_balance(params={"type": market_type})
-        except Exception as e:
-            return e
+        balance = self._fetch_balance_data(market_type)
+        if balance is None:
+            return None
         return float(balance["total"]["USDC"])
 
     def fetch_history(self, since: int = None):
@@ -106,7 +106,7 @@ class Hyperliquid(BaseExchange):
             income["symbol"] = history["delta"]["coin"] + "USDC"
             income["timestamp"] = history["time"]
             income["income"] = history["delta"]["usdc"]
-            income["uniqueid"] = history["time"] + "_" + history["delta"]["coin"]
+            income["uniqueid"] = f'{history["time"]}_{history["delta"]["coin"]}'
             all.append(income)
             
         # Fetch Trades
@@ -184,15 +184,12 @@ class Hyperliquid(BaseExchange):
     def fetch_symbol_infos(self, symbol: str):
         if not self.instance:
             self.connect()
-            self._markets = self.instance.load_markets()
-        
-        symbol = f'{symbol[0:-4]}/USDC:USDC'
-        
         if not self._markets:
             try:
                 self._markets = self.instance.load_markets()
-            except (ccxt.BaseError, Exception) as e:
+            except (ccxt.BaseError, Exception):
                 return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+        symbol = f'{symbol[0:-4]}/USDC:USDC'
         if symbol not in self._markets:
             return 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
         symbol_info = self._markets[symbol]

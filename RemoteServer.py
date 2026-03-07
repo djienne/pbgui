@@ -16,6 +16,7 @@ import glob
 
 from Status import InstancesStatus
 from PBRun import PBRun
+from process_utils import run_logged_command
 
 
 class RemoteServer():
@@ -251,12 +252,7 @@ class RemoteServer():
             else:
                 cmd = ['rclone', 'sync', '-v', '--include', f'{{*.json}}', f'{self.bucket}/run_v7_{self.name}', PurePath(f'{pbgdir}/data/remote/run_v7_{self.name}')]
             logfile = Path(f'{pbgdir}/data/logs/sync.log')
-            log = open(logfile,"ab")
-            if platform.system() == "Windows":
-                creationflags = subprocess.CREATE_NO_WINDOW
-                subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True, creationflags=creationflags)
-            else:
-                subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True)
+            run_logged_command(cmd, pbgdir, logfile)
             PBRun().update_status(self.instances_status_v7.status_file, self.name)
             status_ts = self.instances_status_v7.status_ts
             self.instances_status_v7.update_status()
@@ -270,12 +266,7 @@ class RemoteServer():
             pbgdir = Path.cwd()
             cmd = ['rclone', 'sync', '-v', '--include', f'{{multi.hjson,*.json}}', f'{self.bucket}/multi_{self.name}', PurePath(f'{pbgdir}/data/remote/multi_{self.name}')]
             logfile = Path(f'{pbgdir}/data/logs/sync.log')
-            log = open(logfile,"ab")
-            if platform.system() == "Windows":
-                creationflags = subprocess.CREATE_NO_WINDOW
-                subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True, creationflags=creationflags)
-            else:
-                subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True)
+            run_logged_command(cmd, pbgdir, logfile)
             PBRun().update_status(self.instances_status.status_file, self.name)
             status_ts = self.instances_status.status_ts
             self.instances_status.update_status()
@@ -289,12 +280,7 @@ class RemoteServer():
             pbgdir = Path.cwd()
             cmd = ['rclone', 'sync', '-v', '--include', f'{{instance.cfg,config.json}}', f'{self.bucket}/instances_{self.name}', PurePath(f'{pbgdir}/data/remote/instances_{self.name}')]
             logfile = Path(f'{pbgdir}/data/logs/sync.log')
-            log = open(logfile,"ab")
-            if platform.system() == "Windows":
-                creationflags = subprocess.CREATE_NO_WINDOW
-                subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True, creationflags=creationflags)
-            else:
-                subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True)
+            run_logged_command(cmd, pbgdir, logfile)
             PBRun().update_status(self.instances_status_single.status_file, self.name)
             status_ts = self.instances_status_single.status_ts
             self.instances_status_single.update_status()
@@ -350,12 +336,7 @@ class RemoteServer():
         # rclone delete pbgui:pbgui --include *manibot51*/**
         cmd = ['rclone', 'delete', '-v', f'{self.bucket}', '--include', f'*{self.name}*/**']
         logfile = Path(f'{pbgdir}/data/logs/sync.log')
-        log = open(logfile,"ab")
-        if platform.system() == "Windows":
-            creationflags = subprocess.CREATE_NO_WINDOW
-            subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True, creationflags=creationflags)
-        else:
-            subprocess.run(cmd, stdout=log, stderr=log, cwd=pbgdir, text=True)
+        run_logged_command(cmd, pbgdir, logfile)
         # delete local files
         shutil.rmtree(f'{pbgdir}/data/remote/cmd_{self.name}', ignore_errors=True)
         shutil.rmtree(f'{pbgdir}/data/remote/instances_{self.name}', ignore_errors=True)

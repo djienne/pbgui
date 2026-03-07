@@ -89,19 +89,19 @@ class PBMon():
         try:
             if self.my_pid and psutil.pid_exists(self.my_pid) and any(sub.lower().endswith("pbmon.py") for sub in psutil.Process(self.my_pid).cmdline()):
                 return True
-        except psutil.NoSuchProcess:
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
         return False
 
     def load_pid(self):
         if self.pidfile.exists():
-            with open(self.pidfile) as f:
+            with open(self.pidfile, encoding='utf-8') as f:
                 pid = f.read()
                 self.my_pid = int(pid) if pid.isnumeric() else None
 
     def save_pid(self):
         self.my_pid = os.getpid()
-        with open(self.pidfile, 'w') as f:
+        with open(self.pidfile, 'w', encoding='utf-8') as f:
             f.write(str(self.my_pid))
     
     async def send_telegram_message(self, message):

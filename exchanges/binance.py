@@ -12,12 +12,10 @@ class Binance(BaseExchange):
         return position[0]
 
     def fetch_balance(self, market_type: str, symbol: str = None):
-        if not self.instance: self.connect()
-        try:
-            balance = self.instance.fetch_balance(params={"type": market_type})
-        except Exception as e:
-            return e
-        
+        balance = self._fetch_balance_data(market_type)
+        if balance is None:
+            return None
+
         if market_type == 'swap':
             return float(balance["info"]["totalWalletBalance"])
         else:

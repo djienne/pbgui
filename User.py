@@ -70,12 +70,6 @@ class Users:
     
     def __iter__(self):
         return iter(self.users)
-
-    def __next__(self):
-        if self.index > len(self.users):
-            raise StopIteration
-        self.index += 1
-        return next(self)
     
     def list(self):
         return list(map(lambda c: c.name, self.users))

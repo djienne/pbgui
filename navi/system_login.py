@@ -1,6 +1,16 @@
 import streamlit as st
 import platform
-from pbgui_func import check_password, set_page_config, change_ini, is_pb7_installed, is_pb_installed, is_authenticted, get_navi_paths
+from pbgui_func import (
+    check_password,
+    set_page_config,
+    change_ini,
+    is_pb7_installed,
+    is_pb_installed,
+    is_authenticted,
+    get_navi_paths,
+    verify_auth_password,
+    set_auth_password,
+)
 from pbgui_purefunc import load_ini, save_ini
 import pbgui_help
 from Services import Services
@@ -9,7 +19,6 @@ from RunV7 import V7Instances
 from Multi import MultiInstances
 from User import Users
 from PBCoinData import CoinData
-import toml
 import os
 from pathlib import Path, PurePath
 
@@ -22,49 +31,22 @@ def change_password():
             submit_button = st.form_submit_button("Update Password", help=pbgui_help.change_password)
 
         if submit_button:
-            # Retrieve the current password from secrets, default to empty string if not set
-            stored_password = st.secrets.get("password", "")
-
-            # Verify current password
-            if current_password != stored_password:
+            if not verify_auth_password(current_password):
                 st.error("Current password is incorrect.")
                 return
 
-            # Check if new passwords match
             if new_password != confirm_password:
                 st.error("New passwords do not match.")
                 return
+            if not new_password:
+                st.error("New password can not be empty.")
+                return
 
-            # Update the secrets.toml file
             try:
-                secrets_path = Path(".streamlit/secrets.toml")
-                if not secrets_path.exists():
-                    st.error("secrets.toml file does not exist.")
-                    # Create empty file
-                    with open(secrets_path, "w") as f:
-                        f.write("")
-
-                # Load existing secrets
-                with open(secrets_path, "r") as f:
-                    try:
-                        secrets = toml.load(f)
-                    except toml.TomlDecodeError:
-                        st.error("secrets.toml is not a valid TOML file.")
-                        return
-
-                # Update the password
-                secrets["password"] = new_password
-
-                # Write back to the file
-                with open(secrets_path, "w") as f:
-                    toml.dump(secrets, f)
-
+                set_auth_password(new_password)
                 st.success("Password updated successfully. Please log in again.")
-
-                # Clear session state to force re-authentication
                 st.session_state.clear()
                 st.rerun()
-
             except Exception as e:
                 st.error(f"An error occurred while updating the password: {e}")
 

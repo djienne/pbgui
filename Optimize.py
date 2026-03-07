@@ -22,6 +22,7 @@ import pbgui_help
 from time import sleep
 import traceback
 import logging
+from process_utils import launch_logged_process, run_logged_command, safe_process_cmdline
 
 class OptimizeItem(Base):
     BOOLS = ['n', 'y']
@@ -80,14 +81,12 @@ class OptimizeItem(Base):
     def pid(self):
         if self.file:
             for process in psutil.process_iter():
-                try:
-                    cmdline = process.cmdline()
-                except psutil.NoSuchProcess:
-                    pass
-                except psutil.AccessDenied:
-                    pass
+                cmdline = safe_process_cmdline(process)
+                if not cmdline:
+                    continue
                 if any("optimize.py" in sub for sub in cmdline):
                     if (
+                        len(cmdline) > 30 and
                         cmdline[4] == self.user and
                         cmdline[6] == self.symbol and
                         cmdline[8] == str(self.oc.iters) and
@@ -110,13 +109,8 @@ class OptimizeItem(Base):
             cmd_end = f'-u {self.user} -s {self.symbol} -i {self.oc.iters} -pm {self.oc.passivbot_mode} -a {self.oc.algorithm} -sd {self.sd} -ed {self.ed} -sb {self.sb} -m {self.market_type} -oh {self.ohlcv} -c {cpu} -le {self.BOOLS[self.oc.do_long]} -se {self.BOOLS[self.oc.do_short]}'
             cmd.extend(shlex.split(cmd_end))
             cmd.extend(['-oc', str(PurePath(f'{self.oc.config_file}')), '-bd', str(PurePath(f'{pbdir()}/backtests/pbgui'))])
-            log = open(self.log,"w")
             print(f'{datetime.datetime.now().isoformat(sep=" ", timespec="seconds")} Start: {cmd}')
-            if platform.system() == "Windows":
-                creationflags = subprocess.CREATE_NO_WINDOW
-                result = subprocess.run(cmd, stdout=log, stderr=log, cwd=pbdir(), text=True, creationflags=creationflags)
-            else:
-                result = subprocess.run(cmd, stdout=log, stderr=log, cwd=pbdir(), text=True)
+            result = run_logged_command(cmd, pbdir(), self.log, mode="w")
             if result.returncode == 0:
                 self.finish +=1
                 self.save(self.position)
@@ -554,9 +548,8 @@ class OptimizeQueue:
 
     def pid(self):
         for process in psutil.process_iter():
-            try:
-                cmdline = process.cmdline()
-            except psutil.AccessDenied:
+            cmdline = safe_process_cmdline(process)
+            if not cmdline:
                 continue
             if any("Optimize.py" in sub for sub in cmdline):
                 return process
@@ -571,13 +564,7 @@ class OptimizeQueue:
             if logfile.exists():
                 if logfile.stat().st_size >= 1048576:
                     logfile.replace(f'{str(logfile)}.old')
-            log = open(logfile,"a")
-            if platform.system() == "Windows":
-                creationflags = subprocess.DETACHED_PROCESS
-                creationflags |= subprocess.CREATE_NO_WINDOW
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbgdir, text=True, creationflags=creationflags)
-            else:
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbgdir, text=True, start_new_session=True)
+            launch_logged_process(cmd, self.pbgdir, logfile)
 
     def add(self, item: OptimizeItem = None):
         if item:

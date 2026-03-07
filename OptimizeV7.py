@@ -24,6 +24,7 @@ from Config import ConfigV7, Bounds, Logging
 import logging
 import os
 import fnmatch
+from process_utils import launch_logged_process, safe_process_cmdline
 
 class OptimizeV7QueueItem:
     def __init__(self):
@@ -148,12 +149,12 @@ class OptimizeV7QueueItem:
 
     def load_pid(self):
         if self.pidfile.exists():
-            with open(self.pidfile) as f:
+            with open(self.pidfile, encoding='utf-8') as f:
                 pid = f.read()
                 self.pid = int(pid) if pid.isnumeric() else None
 
     def save_pid(self):
-        with open(self.pidfile, 'w') as f:
+        with open(self.pidfile, 'w', encoding='utf-8') as f:
             f.write(str(self.pid))
 
     def run(self):
@@ -165,13 +166,7 @@ class OptimizeV7QueueItem:
                 cmd = [pb7venv(), '-u', PurePath(f'{pb7dir()}/src/optimize.py'), '-t', str(PurePath(f'{self.json}')), str(PurePath(f'{self.json}'))]
             else:
                 cmd = [pb7venv(), '-u', PurePath(f'{pb7dir()}/src/optimize.py'), str(PurePath(f'{self.json}'))]
-            log = open(self.log,"w")
-            if platform.system() == "Windows":
-                creationflags = subprocess.DETACHED_PROCESS
-                creationflags |= subprocess.CREATE_NO_WINDOW
-                btm = subprocess.Popen(cmd, stdout=log, stderr=log, cwd=pb7dir(), text=True, creationflags=creationflags)
-            else:
-                btm = subprocess.Popen(cmd, stdout=log, stderr=log, cwd=pb7dir(), text=True, start_new_session=True)
+            btm = launch_logged_process(cmd, pb7dir(), self.log, mode="w")
             self.pid = btm.pid
             self.save_pid()
             os.environ['PATH'] = old_os_path
@@ -288,13 +283,7 @@ class OptimizeV7Queue:
             if logfile.exists():
                 if logfile.stat().st_size >= 1048576:
                     logfile.replace(f'{str(logfile)}.old')
-            log = open(logfile,"a")
-            if platform.system() == "Windows":
-                creationflags = subprocess.DETACHED_PROCESS
-                creationflags |= subprocess.CREATE_NO_WINDOW
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=PBGDIR, text=True, creationflags=creationflags)
-            else:
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=PBGDIR, text=True, start_new_session=True)
+            launch_logged_process(cmd, PBGDIR, logfile)
 
     def stop(self):
         if self.is_running():
@@ -307,9 +296,8 @@ class OptimizeV7Queue:
 
     def pid(self):
         for process in psutil.process_iter():
-            try:
-                cmdline = process.cmdline()
-            except psutil.AccessDenied:
+            cmdline = safe_process_cmdline(process)
+            if not cmdline:
                 continue
             if any("OptimizeV7.py" in sub for sub in cmdline):
                 return process

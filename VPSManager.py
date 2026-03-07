@@ -35,6 +35,18 @@ PB7DIR = pb7dir()
 PBVENV = pbvenv()
 PB7VENV = pb7venv()
 
+ANSI_ESCAPE_RE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+VALID_VPS_COMMANDS = frozenset({
+    "vps-update-pbgui", "vps-update-pb", "vps-update", "vps-reboot",
+    "vps-cleanup", "vps-resize-swap", "vps-update-firewall",
+    "vps-update-coindata", "vps-fetch-logfile",
+})
+VALID_MASTER_COMMANDS = frozenset({
+    "master-update-pb", "master-update-pbgui", "master-update-pbonly",
+    "master-install-rustup", "master-install-rclone",
+})
+
 class VPS:
     def __init__(self):
         self._hostname = None
@@ -527,22 +539,19 @@ class VPS:
     @st.fragment(run_every=1)
     def view_init_log(self):
         ansi = self.init_log
-        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-        result = ansi_escape.sub("", ansi)
+        result = ANSI_ESCAPE_RE.sub("", ansi)
         st.code(result, language="coffeescript")
 
     @st.fragment(run_every=1)
     def view_setup_log(self):
         ansi = self.setup_log
-        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-        result = ansi_escape.sub("", ansi)
+        result = ANSI_ESCAPE_RE.sub("", ansi)
         st.code(result, language="coffeescript")
     
     @st.fragment(run_every=1)
     def view_update_log(self):
         ansi = self.update_log
-        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-        result = ansi_escape.sub("", ansi)
+        result = ANSI_ESCAPE_RE.sub("", ansi)
         st.code(result, language="coffeescript")
 
     def init_event_handler(self, event):
@@ -679,8 +688,7 @@ class VPSManager:
     @st.fragment(run_every=1)
     def view_update_log(self):
         ansi = self.update_log
-        ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-        result = ansi_escape.sub("", ansi)
+        result = ANSI_ESCAPE_RE.sub("", ansi)
         st.code(result, language="coffeescript")
 
     def update_event_handler(self, event):
@@ -814,6 +822,11 @@ class VPSManager:
             vps.update_log = "Error: Ansible is not available on this platform (Windows). VPS management features require Linux/Mac.\n\nTo use VPS management:\n1. Run PBGui on a Linux/Mac system, OR\n2. Manage your VPS manually using SSH"
             vps.save()
             return
+        if vps.command not in VALID_VPS_COMMANDS:
+            vps.update_status = "failed"
+            vps.update_log = f"Error: Invalid VPS command '{vps.command}'"
+            vps.save()
+            return
         vps.update_status = None
         vps.save()
         vps.remove_update_log()
@@ -852,6 +865,8 @@ class VPSManager:
         if not ANSIBLE_AVAILABLE:
             # Silently fail or show error - this is a non-critical feature
             return
+        if vps.command not in VALID_VPS_COMMANDS:
+            return
         # vps.update_status = None
         vps.save()
         # vps.remove_update_log()
@@ -885,6 +900,10 @@ class VPSManager:
         if not ANSIBLE_AVAILABLE:
             self.update_status = "failed"
             self.update_log = "Error: Ansible is not available on this platform (Windows). Update master feature requires Linux/Mac.\n\nTo update on Windows, manually run:\ngit pull\npip install -r requirements.txt"
+            return
+        if self.command not in VALID_MASTER_COMMANDS:
+            self.update_status = "failed"
+            self.update_log = f"Error: Invalid master command '{self.command}'"
             return
         self.update_status = None
         self.privat_data_dir = Path(f'{PBGDIR}/data/vpsmanager/tmp')

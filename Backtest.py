@@ -24,6 +24,7 @@ from shutil import rmtree
 import requests
 import datetime
 import logging
+from process_utils import launch_logged_process, safe_process_cmdline
 
 class BacktestItem(Base):
     def __init__(self, config: str = None):
@@ -280,12 +281,9 @@ class BacktestItem(Base):
     def pid(self):
         if self.file:
             for process in psutil.process_iter():
-                try:
-                    cmdline = process.cmdline()
-                except psutil.NoSuchProcess:
-                    pass
-                except psutil.AccessDenied:
-                    pass
+                cmdline = safe_process_cmdline(process)
+                if not cmdline:
+                    continue
                 if any("backtest.py" in sub for sub in cmdline):
                     if len(cmdline) == 19:
                         if (
@@ -305,13 +303,7 @@ class BacktestItem(Base):
             cmd_end = f'-dp -u {self.user} -s {self.symbol} -sd {self.sd} -ed {self.ed} -sb {self.sb} -m {self.market_type}'
             cmd.extend(shlex.split(cmd_end))
             cmd.extend(['-bd', PurePath(f'{pbdir()}/backtests/pbgui'), str(PurePath(f'{self._config.config_file}'))])
-            log = open(self.log,"w")
-            if platform.system() == "Windows":
-                creationflags = subprocess.DETACHED_PROCESS
-                creationflags |= subprocess.CREATE_NO_WINDOW
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=pbdir(), text=True, creationflags=creationflags)
-            else:
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=pbdir(), text=True, start_new_session=True)
+            launch_logged_process(cmd, pbdir(), self.log, mode="w")
 
 class BacktestQueue:
     def __init__(self):
@@ -427,13 +419,7 @@ class BacktestQueue:
             if logfile.exists():
                 if logfile.stat().st_size >= 1048576:
                     logfile.replace(f'{str(logfile)}.old')
-            log = open(logfile,"a")
-            if platform.system() == "Windows":
-                creationflags = subprocess.DETACHED_PROCESS
-                creationflags |= subprocess.CREATE_NO_WINDOW
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=PBGDIR, text=True, creationflags=creationflags)
-            else:
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=PBGDIR, text=True, start_new_session=True)
+            launch_logged_process(cmd, PBGDIR, logfile)
 
     def stop(self):
         if self.is_running():
@@ -446,9 +432,8 @@ class BacktestQueue:
 
     def pid(self):
         for process in psutil.process_iter():
-            try:
-                cmdline = process.cmdline()
-            except psutil.AccessDenied:
+            cmdline = safe_process_cmdline(process)
+            if not cmdline:
                 continue
             if any("Backtest.py" in sub for sub in cmdline):
                 return process

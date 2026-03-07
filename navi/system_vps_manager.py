@@ -8,8 +8,16 @@ from datetime import datetime
 from PBCoinData import CoinData
 import psutil
 import subprocess
-import shlex
 import getpass
+import sys
+
+IPV4_PATTERN = re.compile(
+    r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+)
+
+def _contains_jinja2(value: str) -> bool:
+    """Check if a string contains Jinja2 template syntax."""
+    return "{{" in value or "}}" in value
 
 
 def list_vps():
@@ -122,7 +130,7 @@ def list_vps():
         "PB6 github": pb6,
         "PB7": f'{pbremote.pb7_version}',
         "PB7 github": pb7,
-        "API Sync": "✅"
+        "API Sync": "✅" if pbremote.sync_api_keys else "Disabled"
     })
     # Add VPS
     all_api_sync = True
@@ -140,7 +148,7 @@ def list_vps():
                     if "vps_ip" in st.session_state:
                         if st.session_state.vps_ip != vps.ip:
                             # Check if self.ip is a valid IPv4 address
-                            if re.match(r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$", st.session_state.vps_ip):
+                            if IPV4_PATTERN.match(st.session_state.vps_ip):
                                 vps.ip = st.session_state.vps_ip
                             else:
                                 st.session_state.vps_ip = vps.ip
@@ -156,12 +164,25 @@ def list_vps():
                     ):
                         entry = f"{vps.ip} {vps.hostname}"
                         try:
-                            pw_escaped = shlex.quote(st.session_state.sudo_pw)
-                            entry_escaped = shlex.quote(entry)
-                            cmd = f'echo {pw_escaped} | sudo -S bash -c "echo {entry_escaped} >> /etc/hosts"'
-                            proc = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+                            script = (
+                                "from pathlib import Path; import sys\n"
+                                "hosts_path = Path(sys.argv[1])\n"
+                                "entry = sys.argv[2]\n"
+                                "existing = hosts_path.read_text(encoding='utf-8') if hosts_path.exists() else ''\n"
+                                "lines = existing.splitlines()\n"
+                                "if entry not in lines:\n"
+                                "    prefix = '\\n' if existing and not existing.endswith('\\n') else ''\n"
+                                "    with hosts_path.open('a', encoding='utf-8') as handle:\n"
+                                "        handle.write(f'{prefix}{entry}\\n')\n"
+                            )
+                            proc = subprocess.run(
+                                ["sudo", "-S", sys.executable, "-c", script, "/etc/hosts", entry],
+                                input=f"{st.session_state.sudo_pw}\n",
+                                text=True,
+                                capture_output=True,
+                            )
                             if proc.returncode == 0:
-                                info_popup(f"Added {entry} to /etc/hosts (via sudo)")
+                                info_popup(f"Added {entry} to /etc/hosts")
                                 st.stop()
                             else:
                                 err = proc.stderr.strip() or proc.stdout.strip()
@@ -248,7 +269,9 @@ def list_vps():
             reboot = "❌"
         else:
             reboot = "✅"
-        if server.is_api_md5_same(pbremote.api_md5):
+        if not pbremote.sync_api_keys:
+            api_sync = "Disabled"
+        elif server.is_api_md5_same(pbremote.api_md5):
             api_sync = "✅"
         else:
             api_sync = "❌"
@@ -465,7 +488,11 @@ def manage_vps():
         update_ok = f' ❌'
     if "vps_user_pw" in st.session_state:
         if st.session_state.vps_user_pw != vps.user_pw:
-            vps.user_pw = st.session_state.vps_user_pw
+            if _contains_jinja2(st.session_state.vps_user_pw):
+                st.session_state.vps_user_pw = vps.user_pw
+                error_popup("Error: user_pw contains '{{' or '}}'")
+            else:
+                vps.user_pw = st.session_state.vps_user_pw
     else:
         st.session_state.vps_user_pw = vps.user_pw
     if "vps_swap" in st.session_state:
@@ -475,8 +502,12 @@ def manage_vps():
         st.session_state.vps_swap = vps.swap
     if "vps_coindata_api_key" in st.session_state:
         if st.session_state.vps_coindata_api_key != vps.coinmarketcap_api_key:
-            vps.coinmarketcap_api_key = st.session_state.vps_coindata_api_key
-            vps_coindata.api_key = st.session_state.vps_coindata_api_key
+            if _contains_jinja2(st.session_state.vps_coindata_api_key):
+                st.session_state.vps_coindata_api_key = vps.coinmarketcap_api_key
+                error_popup("Error: coinmarketcap_api_key contains '{{' or '}}'")
+            else:
+                vps.coinmarketcap_api_key = st.session_state.vps_coindata_api_key
+                vps_coindata.api_key = st.session_state.vps_coindata_api_key
     else:
         st.session_state.vps_coindata_api_key = vps.coinmarketcap_api_key
     if "vps_install_pb6" in st.session_state:
@@ -496,8 +527,10 @@ def manage_vps():
         st.session_state.vps_firewall_ssh_port = vps.firewall_ssh_port
     if "vps_firewall_ssh_ips" in st.session_state:
         if st.session_state.vps_firewall_ssh_ips != vps.firewall_ssh_ips:
-            # regex for ip check: "^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
-            if all([re.match(r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$", ip) for ip in st.session_state.vps_firewall_ssh_ips.split(",")]):
+            if _contains_jinja2(st.session_state.vps_firewall_ssh_ips):
+                st.session_state.vps_firewall_ssh_ips = vps.firewall_ssh_ips
+                error_popup("Error: firewall_ssh_ips contains '{{' or '}}'")
+            elif all([IPV4_PATTERN.match(ip) for ip in st.session_state.vps_firewall_ssh_ips.split(",")]):
                 vps.firewall_ssh_ips = st.session_state.vps_firewall_ssh_ips
             elif st.session_state.vps_firewall_ssh_ips == "":
                 vps.firewall_ssh_ips = st.session_state.vps_firewall_ssh_ips
@@ -778,7 +811,7 @@ def init_vps():
     if "vps_ip" in st.session_state:
         if st.session_state.vps_ip != vps.ip:
             # Check if self.ip is a valid IPv4 address
-            if re.match(r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$", st.session_state.vps_ip):
+            if IPV4_PATTERN.match(st.session_state.vps_ip):
                 vps.ip = st.session_state.vps_ip
             else:
                 st.session_state.vps_ip = vps.ip
@@ -804,8 +837,7 @@ def init_vps():
             vps.initial_root_pw = st.session_state.vps_initial_root_pw
     if "vps_root_pw" in st.session_state:
         if st.session_state.vps_root_pw != vps.root_pw:
-            #error when root_pw has {{ or }} in it
-            if "{{" in st.session_state.vps_root_pw or "}}" in st.session_state.vps_root_pw:
+            if _contains_jinja2(st.session_state.vps_root_pw):
                 st.session_state.vps_root_pw = vps.root_pw
                 error_popup("Error: root_pw contains '{{' or '}}'")
             else:
@@ -816,8 +848,7 @@ def init_vps():
     if "vps_user_sudo_pw" in st.session_state:
         if st.session_state.vps_user_sudo_pw != vps.user_sudo_pw:
             if st.session_state.vps_user_sudo_pw != "":
-                #error when user_sudo_pw has {{ or }} in it
-                if "{{" in st.session_state.vps_user_sudo_pw or "}}" in st.session_state.vps_user_sudo_pw:
+                if _contains_jinja2(st.session_state.vps_user_sudo_pw):
                     st.session_state.vps_user_sudo_pw = vps.user_sudo_pw
                     error_popup("Error: user_sudo_pw contains '{{' or '}}'")
                 else:
@@ -834,8 +865,7 @@ def init_vps():
     if "vps_user_pw" in st.session_state:
         if st.session_state.vps_user_pw != vps.user_pw:
             if st.session_state.vps_user_pw != "":
-                #error when user_pw has {{ or }} in it
-                if "{{" in st.session_state.vps_user_pw or "}}" in st.session_state.vps_user_pw:
+                if _contains_jinja2(st.session_state.vps_user_pw):
                     st.session_state.vps_user_pw = vps.user_pw
                     error_popup("Error: user_pw contains '{{' or '}}'")
                 else:

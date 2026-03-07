@@ -527,7 +527,7 @@ class Dashboard():
         dashboard_path = Path(f'{PBGDIR}/data/dashboards')
         dashboard_path.mkdir(parents=True, exist_ok=True)
         dashboard_file = Path(f'{dashboard_path}/{self.name}.json')
-        with dashboard_file.open("w") as f:
+        with dashboard_file.open("w", encoding="utf-8") as f:
             json.dump(dashboard_config, f, indent=4)
 
     def load(self, name : str):

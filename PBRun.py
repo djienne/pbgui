@@ -26,6 +26,7 @@ from Status import InstanceStatus, InstancesStatus
 from PBCoinData import CoinData
 from pbgui_purefunc import save_ini
 from constants import DEFAULT_MEM_WARNING_MB, FILE_SIZE_10MB
+from process_utils import launch_logged_process, safe_process_cmdline
 import re
 
 
@@ -103,6 +104,9 @@ class Monitor():
                 self.log_lp = 0
                 seek = True
             current_position = logfile.stat().st_size
+            if current_position < self.log_lp:
+                self.log_lp = 0
+                seek = True
             with open(logfile, "r") as f:
                 f.seek(self.log_lp)
                 new_content = f.read().splitlines()
@@ -145,6 +149,8 @@ class Monitor():
                 if tb_found:
                     if not "ERROR" in line and not "INFO" in line and not "Traceback" in line:
                         self.log_traceback.append(line)
+                        if len(self.log_traceback) > 1000:
+                            self.log_traceback = self.log_traceback[-500:]
                     else:
                         tb_found = False
                         self.tracebacks_today += 1
@@ -343,12 +349,9 @@ class RunSingle():
 
     def pid(self) -> psutil.Process | None:
         for process in psutil.process_iter():
-            try:
-                cmdline = process.cmdline()
-            except psutil.NoSuchProcess:
-                pass
-            except psutil.AccessDenied:
-                pass
+            cmdline = safe_process_cmdline(process)
+            if not cmdline:
+                continue
             if self.user in cmdline and self.symbol in cmdline and any("passivbot.py" in sub for sub in cmdline):
                 self.monitor.start_time = process.create_time()
                 self.monitor.memory = process.memory_full_info()
@@ -359,7 +362,12 @@ class RunSingle():
     def stop(self) -> None:
         if self.is_running():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: {self.user} {self.symbol}')
-            self.pid().kill()
+            try:
+                p = self.pid()
+                if p:
+                    p.kill()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
 
     def start(self):
         if not self.is_running():
@@ -370,13 +378,7 @@ class RunSingle():
             cmd.extend(shlex.split(cmd_end))
             cmd.extend([config])
             logfile = Path(f'{self.path}/passivbot.log')
-            log = open(logfile,"ab")
-            if platform.system() == "Windows":
-                creationflags = subprocess.DETACHED_PROCESS
-                creationflags |= subprocess.CREATE_NO_WINDOW
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbdir, text=True, creationflags=creationflags)
-            else:
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbdir, text=True, start_new_session=True)
+            launch_logged_process(cmd, self.pbdir, logfile)
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Start Single: {cmd_end}')
         # wait until passivbot is running
         for i in range(10):
@@ -521,12 +523,9 @@ class RunMulti():
 
     def pid(self) -> psutil.Process | None:
         for process in psutil.process_iter():
-            try:
-                cmdline = process.cmdline()
-            except psutil.NoSuchProcess:
-                pass
-            except psutil.AccessDenied:
-                pass
+            cmdline = safe_process_cmdline(process)
+            if not cmdline:
+                continue
             if any(self.user in sub for sub in cmdline) and any("passivbot_multi.py" in sub for sub in cmdline):
                 self.monitor.start_time = process.create_time()
                 self.monitor.memory = process.memory_full_info()
@@ -537,19 +536,18 @@ class RunMulti():
     def stop(self) -> None:
         if self.is_running():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: passivbot_multi.py {self.path}/multi_run.hjson')
-            self.pid().kill()
+            try:
+                p = self.pid()
+                if p:
+                    p.kill()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
 
     def start(self) -> None:
         if not self.is_running():
             cmd = [self.pbvenv, '-u', PurePath(f'{self.pbdir}/passivbot_multi.py'), PurePath(f'{self.path}/multi_run.hjson')]
             logfile = Path(f'{self.path}/passivbot.log')
-            log = open(logfile,"ab")
-            if platform.system() == "Windows":
-                creationflags = subprocess.DETACHED_PROCESS
-                creationflags |= subprocess.CREATE_NO_WINDOW
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbdir, text=True, creationflags=creationflags)
-            else:
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbdir, text=True, start_new_session=True)
+            launch_logged_process(cmd, self.pbdir, logfile)
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Start: passivbot_multi.py {self.path}/multi_run.hjson')
         # wait until passivbot is running
         for i in range(10):
@@ -669,12 +667,9 @@ class RunV7():
 
     def pid(self) -> psutil.Process | None:
         for process in psutil.process_iter():
-            try:
-                cmdline = process.cmdline()
-            except psutil.NoSuchProcess:
-                pass
-            except psutil.AccessDenied:
-                pass
+            cmdline = safe_process_cmdline(process)
+            if not cmdline:
+                continue
             if any(self.user in sub for sub in cmdline) and any("main.py" in sub for sub in cmdline):
                 if cmdline[-1].endswith(f'/{self.user}/config_run.json') or cmdline[-1].endswith(f'\\{self.user}\\config_run.json'):
                     self.monitor.start_time = process.create_time()
@@ -686,7 +681,12 @@ class RunV7():
     def stop(self) -> None:
         if self.is_running():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: passivbot v7 {self.path}/config_run.json')
-            self.pid().kill()
+            try:
+                p = self.pid()
+                if p:
+                    p.kill()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
 
     def start(self) -> None:
         if not self.is_running():
@@ -695,13 +695,7 @@ class RunV7():
             os.environ['PATH'] = new_os_path
             cmd = [self.pbvenv, '-u', PurePath(f'{self.pbdir}/src/main.py'), PurePath(f'{self.path}/config_run.json')]
             logfile = Path(f'{self.path}/passivbot.log')
-            log = open(logfile,"ab")
-            if platform.system() == "Windows":
-                creationflags = subprocess.DETACHED_PROCESS
-                creationflags |= subprocess.CREATE_NO_WINDOW
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbdir, text=True, creationflags=creationflags)
-            else:
-                subprocess.Popen(cmd, stdout=log, stderr=log, cwd=self.pbdir, text=True, start_new_session=True)
+            launch_logged_process(cmd, self.pbdir, logfile)
             os.environ['PATH'] = old_os_path
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Start: passivbot_v7 {self.path}/config_run.json')
         # wait until passivbot is running
@@ -964,21 +958,24 @@ class PBRun():
             pbgui_git = Path(f'{self.pbgdir}/.git')
             subprocess.run(["git", "--git-dir", f'{pbgui_git}', "fetch", "origin"])
             pbgui_commit = subprocess.run(["git", "--git-dir", f'{pbgui_git}', "log", "-n", "1", "--pretty=format:%H", "origin/main"], stdout=subprocess.PIPE, text=True)
-            self.pbgui_commit_origin = pbgui_commit.stdout
+            if pbgui_commit.returncode == 0 and pbgui_commit.stdout:
+                self.pbgui_commit_origin = pbgui_commit.stdout
         if self.pbdir:
             pb6_git = Path(f'{self.pbdir}/.git')
             if pb6_git.exists():
                 pb6_git = Path(f'{self.pbdir}/.git')
                 subprocess.run(["git", "--git-dir", f'{pb6_git}', "fetch", "origin"])
                 pb6_commit = subprocess.run(["git", "--git-dir", f'{pb6_git}', "log", "-n", "1", "--pretty=format:%H", "origin/v6.1.4b_latest_v6"], stdout=subprocess.PIPE, text=True)
-                self.pb6_commit_origin = pb6_commit.stdout
+                if pb6_commit.returncode == 0 and pb6_commit.stdout:
+                    self.pb6_commit_origin = pb6_commit.stdout
         if self.pb7dir:
             pb7_git = Path(f'{self.pb7dir}/.git')
             if pb7_git.exists():
                 pb7_git = Path(f'{self.pb7dir}/.git')
                 subprocess.run(["git", "--git-dir", f'{pb7_git}', "fetch", "origin"])
                 pb7_commit = subprocess.run(["git", "--git-dir", f'{pb7_git}', "log", "-n", "1", "--pretty=format:%H", "origin/master"], stdout=subprocess.PIPE, text=True)
-                self.pb7_commit_origin = pb7_commit.stdout
+                if pb7_commit.returncode == 0 and pb7_commit.stdout:
+                    self.pb7_commit_origin = pb7_commit.stdout
 
     def load_git_commits(self):
         """Load the git commit hash of pbgui, pb6 and pb7 using git log -n 1"""
@@ -986,19 +983,22 @@ class PBRun():
         if pbgui_git.exists():
             pbgui_git = Path(f'{self.pbgdir}/.git')
             pbgui_commit = subprocess.run(["git", "--git-dir", f'{pbgui_git}', "log", "-n", "1", "--pretty=format:%H"], stdout=subprocess.PIPE, text=True)
-            self.pbgui_commit = pbgui_commit.stdout
+            if pbgui_commit.returncode == 0 and pbgui_commit.stdout:
+                self.pbgui_commit = pbgui_commit.stdout
         if self.pbdir:
             pb6_git = Path(f'{self.pbdir}/.git')
             if pb6_git.exists():
                 pb6_git = Path(f'{self.pbdir}/.git')
                 pb6_commit = subprocess.run(["git", "--git-dir", f'{pb6_git}', "log", "-n", "1", "--pretty=format:%H"], stdout=subprocess.PIPE, text=True)
-                self.pb6_commit = pb6_commit.stdout
+                if pb6_commit.returncode == 0 and pb6_commit.stdout:
+                    self.pb6_commit = pb6_commit.stdout
         if self.pb7dir:
             pb7_git = Path(f'{self.pb7dir}/.git')
             if pb7_git.exists():
                 pb7_git = Path(f'{self.pb7dir}/.git')
                 pb7_commit = subprocess.run(["git", "--git-dir", f'{pb7_git}', "log", "-n", "1", "--pretty=format:%H"], stdout=subprocess.PIPE, text=True)
-                self.pb7_commit = pb7_commit.stdout
+                if pb7_commit.returncode == 0 and pb7_commit.stdout:
+                    self.pb7_commit = pb7_commit.stdout
 
     def load_versions_origin(self):
         """git show origin:README.md and load the versions of pbgui, pb6 and pb7"""
@@ -1643,7 +1643,10 @@ class PBRun():
     def stop(self):
         if self.is_running():
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: PBRun')
-            psutil.Process(self.my_pid).kill()
+            try:
+                psutil.Process(self.my_pid).kill()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
             # Clean up PID file to avoid stale PID issues
             if self.pidfile.exists():
                 self.pidfile.unlink()
@@ -1658,20 +1661,20 @@ class PBRun():
         try:
             if self.my_pid and psutil.pid_exists(self.my_pid) and any(sub.lower().endswith("pbrun.py") for sub in psutil.Process(self.my_pid).cmdline()):
                 return True
-        except psutil.NoSuchProcess:
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
         return False
-    
+
     def load_pid(self):
         if self.pidfile.exists():
-            with open(self.pidfile) as f:
+            with open(self.pidfile, encoding='utf-8') as f:
                 pid = f.read()
                 self.my_pid = int(pid) if pid.isnumeric() else None
 
     def save_pid(self):
         """Saves the process ID into /data/pid/pbrun.pid."""
         self.my_pid = os.getpid()
-        with open(self.pidfile, 'w') as f:
+        with open(self.pidfile, 'w', encoding='utf-8') as f:
             f.write(str(self.my_pid))
 
 

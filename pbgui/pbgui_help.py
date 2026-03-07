@@ -780,7 +780,7 @@ instance_note = """
 task_name = """
     ```
     Name of the task
-    The following characters are not allowed: / \ : * ? " < > |
+    The following characters are not allowed: / \\ : * ? " < > |
     ```"""
     
 pbshare_grid = """
