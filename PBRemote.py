@@ -191,7 +191,7 @@ class PBRemote():
 
     # api_md5
     @property
-    def api_md5(self): return self.calculate_api_md5()
+    def api_md5(self): return self.calculate_api_hash()
 
     def __iter__(self):
         return iter(self.remote_servers)
@@ -652,8 +652,8 @@ class PBRemote():
             local = Path(found_local.pop(0))
             local.unlink(missing_ok=True)
 
-    def calculate_api_md5(self):
-        """Makes a md5 hash from the api-keys.json in passivbot folder."""
+    def calculate_api_hash(self):
+        """Makes a SHA-256 hash from the api-keys.json in passivbot folder."""
         if self.pb7dir:
             file = Path(f'{self.pb7dir}/api-keys.json')
         elif self.pbdir:
@@ -661,7 +661,7 @@ class PBRemote():
         if file.exists():
             with open(file, 'rb') as file_obj:
                 file_contents = file_obj.read()
-            return hashlib.md5(file_contents).hexdigest()
+            return hashlib.sha256(file_contents).hexdigest()
         return None
 
     def load_remote(self):

@@ -27,9 +27,12 @@ from User import Users
 from shutil import rmtree
 import datetime
 import logging
-from process_utils import launch_logged_process, safe_process_cmdline
+from process_utils import launch_logged_process, safe_process_cmdline, QueueItemBase
 
-class BacktestMultiQueueItem():
+class BacktestMultiQueueItem(QueueItemBase):
+    PROCESS_SCRIPT = "backtest_multi.py"
+    COMPLETION_MARKER = "plotting for"
+
     def __init__(self):
         self.name = None
         self.filename = None
@@ -60,52 +63,13 @@ class BacktestMultiQueueItem():
     def status(self):
         if self.is_backtesting():
             return "backtesting..."
-        if self.is_running():
-            return "running"
-        if self.is_finish():
-            return "complete"
-        if self.is_error():
-            return "error"
-        else:
-            return "not started"
-
-    def is_running(self):
-        if not self.pid:
-            self.load_pid()
-        try:
-            if self.pid and psutil.pid_exists(self.pid) and any(sub.lower().endswith("backtest_multi.py") for sub in psutil.Process(self.pid).cmdline()):
-                return True
-        except psutil.NoSuchProcess:
-            pass
-        except psutil.AccessDenied:
-            pass
-        return False
-
-    def is_finish(self):
-        log = self.load_log()
-        if log:
-            if "plotting for" in log:
-                return True
-            else:
-                return False
-        else:
-            return False
-
-    def is_error(self):
-        log = self.load_log()
-        if log:
-            if "plotting for" in log:
-                return False
-            else:
-                return True
-        else:
-            return False
+        return super().status()
 
     def is_backtesting(self):
         if self.is_running():
             log = self.load_log()
             if log:
-                if "plotting for" in log:
+                if self.COMPLETION_MARKER in log:
                     return False
                 elif "backtesting..." in log:
                     return True
@@ -116,16 +80,6 @@ class BacktestMultiQueueItem():
         if self.is_running():
             p = psutil.Process(self.pid)
             p.kill()
-
-    def load_pid(self):
-        if self.pidfile.exists():
-            with open(self.pidfile, encoding='utf-8') as f:
-                pid = f.read()
-                self.pid = int(pid) if pid.isnumeric() else None
-
-    def save_pid(self):
-        with open(self.pidfile, 'w', encoding='utf-8') as f:
-            f.write(str(self.pid))
 
     def run(self):
         if not self.is_finish() and not self.is_running():

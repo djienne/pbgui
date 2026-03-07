@@ -11,19 +11,20 @@ import platform
 import traceback
 from pbgui_func import PBGDIR
 from pbgui_purefunc import save_ini
+from process_utils import ServiceBase, log_ts, rotate_log_if_needed
 from Database import Database
 from User import Users
 import configparser
 from collections import defaultdict
 import asyncio
 
-class PBData():
+class PBData(ServiceBase):
+    SERVICE_NAME = "PBData"
+    SCRIPT_NAME = "PBData.py"
+    PROCESS_SUFFIX = "pbdata.py"
+
     def __init__(self):
-        self.piddir = Path(f'{PBGDIR}/data/pid')
-        if not self.piddir.exists():
-            self.piddir.mkdir(parents=True)
-        self.pidfile = Path(f'{self.piddir}/pbdata.pid')
-        self.my_pid = None
+        self._init_service(PBGDIR, Path(f'{PBGDIR}/data/pid'), 'pbdata')
         self.db = Database()
         self.users = Users()
         self._fetch_users = []
@@ -36,61 +37,6 @@ class PBData():
     def fetch_users(self, new_fetch_users):
         self._fetch_users = new_fetch_users
         self.save_fetch_users()
-
-    def run(self):
-        if not self.is_running():
-            cmd = [sys.executable, '-u', PurePath(f'{PBGDIR}/PBData.py')]
-            if platform.system() == "Windows":
-                creationflags = subprocess.DETACHED_PROCESS
-                creationflags |= subprocess.CREATE_NO_WINDOW
-                subprocess.Popen(cmd, stdout=None, stderr=None, cwd=PBGDIR, text=True, creationflags=creationflags)
-            else:
-                subprocess.Popen(cmd, stdout=None, stderr=None, cwd=PBGDIR, text=True, start_new_session=True)
-            count = 0
-            while True:
-                sleep(1)
-                if self.is_running():
-                    break
-                count += 1
-                if count > 5:
-                    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: Can not start PBData')
-                    break
-
-    def stop(self):
-        if self.is_running():
-            print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Stop: PBData')
-            try:
-                psutil.Process(self.my_pid).kill()
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
-            # Clean up PID file to avoid stale PID issues
-            if self.pidfile.exists():
-                self.pidfile.unlink()
-
-    def restart(self):
-        if self.is_running():
-            self.stop()
-            self.run()
-
-    def is_running(self):
-        self.load_pid()
-        try:
-            if self.my_pid and psutil.pid_exists(self.my_pid) and any(sub.lower().endswith("pbdata.py") for sub in psutil.Process(self.my_pid).cmdline()):
-                return True
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
-        return False
-
-    def load_pid(self):
-        if self.pidfile.exists():
-            with open(self.pidfile, encoding='utf-8') as f:
-                pid = f.read()
-                self.my_pid = int(pid) if pid.isnumeric() else None
-
-    def save_pid(self):
-        self.my_pid = os.getpid()
-        with open(self.pidfile, 'w', encoding='utf-8') as f:
-            f.write(str(self.my_pid))
     
     def load_fetch_users(self):
         pb_config = configparser.ConfigParser()
@@ -196,30 +142,19 @@ def main():
     sys.stdout = TextIOWrapper(_log_out, encoding='utf-8', write_through=True)
     _log_err = open(logfile, "ab", 0)
     sys.stderr = TextIOWrapper(_log_err, encoding='utf-8', write_through=True)
-    print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Start: PBData')
+    print(f'{log_ts()} Start: PBData')
     pbdata = PBData()
     if pbdata.is_running():
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
-        print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Error: PBData already started')
+        print(f'{log_ts()} Error: PBData already started')
         exit(1)
     pbdata.save_pid()
 
     async def run_loop():
         while True:
             try:
-                if logfile.exists() and logfile.stat().st_size >= 10485760:
-                    logfile.replace(f'{str(logfile)}.old')
-                    old_stdout, old_stderr = sys.stdout, sys.stderr
-                    _log_out = open(logfile, "ab", 0)
-                    sys.stdout = TextIOWrapper(_log_out, encoding='utf-8', write_through=True)
-                    _log_err = open(logfile, "ab", 0)
-                    sys.stderr = TextIOWrapper(_log_err, encoding='utf-8', write_through=True)
-                    try:
-                        old_stdout.close()
-                        old_stderr.close()
-                    except Exception:
-                        pass
+                rotate_log_if_needed(logfile)
                 await pbdata.update_db_async()
                 await asyncio.sleep(1)
             except Exception as e:

@@ -28,9 +28,12 @@ import datetime
 import logging
 import os
 import fnmatch
-from process_utils import launch_logged_process, safe_process_cmdline
+import re
+from process_utils import launch_logged_process, safe_process_cmdline, QueueItemBase
 
-class BacktestV7QueueItem():
+class BacktestV7QueueItem(QueueItemBase):
+    COMPLETION_MARKER = "Plotting fills"
+
     def __init__(self):
         self.name = None
         self.filename = None
@@ -83,52 +86,29 @@ class BacktestV7QueueItem():
     def status(self):
         if self.is_backtesting():
             return "backtesting..."
-        if self.is_running():
-            return "running"
-        if self.is_finish():
-            return "complete"
-        if self.is_error():
-            return "error"
-        else:
-            return "not started"
+        return super().status()
 
     def is_running(self):
         if not self.pid:
             self.load_pid()
         try:
-            if self.pid and psutil.pid_exists(self.pid) and (any(sub.lower().endswith("backtest.py") or sub.lower().endswith(f"backtest_{self.config.pbgui.backtest_div_by}.py") for sub in psutil.Process(self.pid).cmdline())):
-                return True
-        except psutil.NoSuchProcess:
-            pass
-        except psutil.AccessDenied:
+            if self.pid and psutil.pid_exists(self.pid):
+                cmdline = safe_process_cmdline(psutil.Process(self.pid))
+                if cmdline and any(
+                    sub.lower().endswith("backtest.py") or
+                    sub.lower().endswith(f"backtest_{self.config.pbgui.backtest_div_by}.py")
+                    for sub in cmdline
+                ):
+                    return True
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
         return False
-
-    def is_finish(self):
-        log = self.load_log()
-        if log:
-            if "Plotting fills" in log:
-                return True
-            else:
-                return False
-        else:
-            return False
-
-    def is_error(self):
-        log = self.load_log()
-        if log:
-            if "Plotting fills" in log:
-                return False
-            else:
-                return True
-        else:
-            return False
 
     def is_backtesting(self):
         if self.is_running():
             log = self.load_log()
             if log:
-                if "Plotting fills" in log:
+                if self.COMPLETION_MARKER in log:
                     return False
                 elif "Starting backtest..." in log:
                     return True
@@ -139,16 +119,6 @@ class BacktestV7QueueItem():
         if self.is_running():
             p = psutil.Process(self.pid)
             p.kill()
-
-    def load_pid(self):
-        if self.pidfile.exists():
-            with open(self.pidfile, encoding='utf-8') as f:
-                pid = f.read()
-                self.pid = int(pid) if pid.isnumeric() else None
-
-    def save_pid(self):
-        with open(self.pidfile, 'w', encoding='utf-8') as f:
-            f.write(str(self.pid))
 
     def run(self):
         if not self.is_finish() and not self.is_running():
@@ -326,7 +296,8 @@ class BacktestV7Queue:
 
     def refresh(self):
         # Remove items from d that are not in items anymore
-        self.d = [item for item in self.d if item.get('filename') in [i.filename for i in self.items]]
+        filenames = {i.filename for i in self.items}
+        self.d = [item for item in self.d if item.get('filename') in filenames]
         # Add items to d that are in items but not in d
         for item in self.items:
             if not any(d_item.get('filename') == item.filename for d_item in self.d):
@@ -996,11 +967,10 @@ class BacktestV7Result:
                     file.seek(end_of_file - num)    
                     last_line = file.read()
                     if last_line.count('\n') == 1:
-                        if len(last_line.split(',')) == format:
-                            final_balance = last_line.split(',')[1]
-                            final_balance_btc = None
-                            if format == 5:
-                                final_balance_btc = last_line.split(',')[3]
+                        fields = last_line.split(',')
+                        if len(fields) == format:
+                            final_balance = fields[1]
+                            final_balance_btc = fields[3] if format == 5 else None
                             return final_balance, final_balance_btc
                         else: last_line = None
         return 0, 0
@@ -1423,6 +1393,9 @@ class ConfigV7Archives:
         if not archive_name or not url:
             st.error("Please enter a name and URL")
             return
+        if not re.match(r'^[a-zA-Z0-9][a-zA-Z0-9_.\-]*$', archive_name):
+            st.error("Invalid archive name. Use only letters, numbers, hyphens, underscores, dots.")
+            return
         cmd = ["git", "clone", url, f"{PBGDIR}/data/archives/{archive_name}"]
         try:
             log = ""
@@ -1457,11 +1430,6 @@ class ConfigV7Archives:
             if archive:
                 path = archive["path"]
                 url = archive["url"]
-                # add token to url
-                if url.startswith("http://"):
-                    url = url.replace("http://", f"http://{self.my_archive_access_token}@")
-                elif url.startswith("https://"):
-                    url = url.replace("https://", f"https://{self.my_archive_access_token}@")
             else:
                 st.error(f"Archive '{self.my_archive}' not found.")
                 return
@@ -1478,8 +1446,8 @@ class ConfigV7Archives:
             except subprocess.CalledProcessError as e:
                 error_popup(f"Error configuring email for {self.my_archive}: {e.stderr}")
                 return
-            # Test push
-            cmd = ["git", "-C", path, "push", url, "--dry-run"]
+            # Test push — pass token via http.extraHeader to avoid embedding in URL
+            cmd = ["git", "-C", path, "-c", f"http.extraHeader=Authorization: Bearer {self.my_archive_access_token}", "push", url, "--dry-run"]
             try:
                 result = subprocess.run(cmd, capture_output=True, check=True, text=True)
                 log = result.stdout + "\n" + result.stderr
@@ -1498,11 +1466,6 @@ class ConfigV7Archives:
             if archive:
                 path = archive["path"]
                 url = archive["url"]
-                # add token to url
-                if url.startswith("http://"):
-                    url = url.replace("http://", f"http://{self.my_archive_access_token}@")
-                elif url.startswith("https://"):
-                    url = url.replace("https://", f"https://{self.my_archive_access_token}@")
             else:
                 st.error(f"Archive '{self.my_archive}' not found.")
                 return
@@ -1548,8 +1511,8 @@ class ConfigV7Archives:
                 error_popup(f"Error committing to {self.my_archive}: {e.stderr}")
                 return
 
-            # push changes
-            cmd = ["git", "-C", path, "push", url]
+            # push changes — pass token via http.extraHeader to avoid embedding in URL
+            cmd = ["git", "-C", path, "-c", f"http.extraHeader=Authorization: Bearer {self.my_archive_access_token}", "push", url]
             try:
                 result = subprocess.run(cmd, capture_output=True, check=True, text=True)
                 log = log + "Git push changes\n"

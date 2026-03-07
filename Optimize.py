@@ -1045,9 +1045,7 @@ class OptimizeResults:
                 self.results_d.append(r_dict)
             st.session_state.ed_key += 1
             st.rerun()
-        symbol_names = ''
-        for symbol_name in self.symbol_names:
-            symbol_names += "- " + symbol_name + "\n"
+        symbol_names = '\n'.join(f"- {name}" for name in self.symbol_names) + '\n'
         if len(self.symbol_names) > 1:
             st.markdown('#### Symbols:')
             st.markdown(symbol_names)

@@ -136,7 +136,7 @@ class BacktestItem(Base):
     def fetch_config(self, url: str):
         try:
             url = url.replace('github.com', 'raw.githubusercontent.com').replace('/tree/', '/').replace('/blob/', '/')
-            response = requests.get(url)
+            response = requests.get(url, timeout=10)
             response.raise_for_status()
             config = response.json()
             return config_pretty_str(config)

@@ -24,9 +24,12 @@ from Config import ConfigV7, Bounds, Logging
 import logging
 import os
 import fnmatch
-from process_utils import launch_logged_process, safe_process_cmdline
+from process_utils import launch_logged_process, safe_process_cmdline, QueueItemBase
 
-class OptimizeV7QueueItem:
+class OptimizeV7QueueItem(QueueItemBase):
+    PROCESS_SCRIPT = "optimize.py"
+    COMPLETION_MARKER = "successfully processed optimize_results"
+
     def __init__(self):
         self.name = None
         self.filename = None
@@ -37,6 +40,7 @@ class OptimizeV7QueueItem:
         self.log_show = False
         self.pid = None
         self.pidfile = None
+        self._status_log_size = 1000
 
     def remove(self):
         self.stop()
@@ -79,50 +83,20 @@ class OptimizeV7QueueItem:
     def status(self):
         if self.is_optimizing():
             return "optimizing..."
-        if self.is_running():
-            return "running"
-        if self.is_finish():
-            return "complete"
-        if self.is_error():
-            return "error"
-        else:
-            return "not started"
+        return super().status()
 
     def is_existing(self):
         if Path(f'{PBGDIR}/data/opt_v7_queue/{self.filename}.json').exists():
             return True
         return False
 
-    def is_running(self):
-        self.load_pid()
-        try:
-            if self.pid and psutil.pid_exists(self.pid) and any(sub.lower().endswith("optimize.py") for sub in psutil.Process(self.pid).cmdline()):
-                return True
-        except psutil.NoSuchProcess:
-            pass
-        except psutil.AccessDenied:
-            pass
-        return False
-
     def is_finish(self):
         log = self.load_log(log_size=1000)
-        if log:
-            if "successfully processed optimize_results" in log or "Optimization complete" in log:
-                return True
-            else:
-                return False
-        else:
-            return False
+        return bool(log and (self.COMPLETION_MARKER in log or "Optimization complete" in log))
 
     def is_error(self):
         log = self.load_log(log_size=1000)
-        if log:
-            if "successfully processed optimize_results" in log or "Optimization complete" in log:
-                return False
-            else:
-                return True
-        else:
-            return False
+        return bool(log and self.COMPLETION_MARKER not in log and "Optimization complete" not in log)
 
     def is_optimizing(self):
         if self.is_running():
@@ -145,17 +119,6 @@ class OptimizeV7QueueItem:
                     p.kill()
                 except psutil.NoSuchProcess:
                     pass
-
-
-    def load_pid(self):
-        if self.pidfile.exists():
-            with open(self.pidfile, encoding='utf-8') as f:
-                pid = f.read()
-                self.pid = int(pid) if pid.isnumeric() else None
-
-    def save_pid(self):
-        with open(self.pidfile, 'w', encoding='utf-8') as f:
-            f.write(str(self.pid))
 
     def run(self):
         if not self.is_finish() and not self.is_running():
@@ -304,7 +267,8 @@ class OptimizeV7Queue:
 
     def refresh(self):
         # Remove items from d that are not in items anymore
-        self.d = [item for item in self.d if item.get('filename') in [i.filename for i in self.items]]
+        filenames = {i.filename for i in self.items}
+        self.d = [item for item in self.d if item.get('filename') in filenames]
         # Add items to d that are in items but not in d
         for item in self.items:
             if not any(d_item.get('filename') == item.filename for d_item in self.d):

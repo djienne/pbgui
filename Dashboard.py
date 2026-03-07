@@ -13,8 +13,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 from Database import Database
 import pbgui_help
+import logging
 
 import time
+
+logger = logging.getLogger(__name__)
 
 class Dashboard():
 
@@ -109,8 +112,8 @@ class Dashboard():
                     # If missing, stale, or pointing to the legacy folder, set to latest known backup
                     if (not current) or (not Path(current).exists()) or ("/data/backups" in str(current)):
                         st.session_state['db_last_backup'] = str(latest)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Failed to detect latest backup: {e}")
         if self.name:
             self.load(name)
         
@@ -564,8 +567,8 @@ class Dashboard():
             if (now - last) >= interval:
                 st.session_state['dashboard_last_tick'] = now
                 st.rerun()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Dashboard auto-refresh error: {e}")
 
 
     def view(self):
@@ -990,7 +993,8 @@ class Dashboard():
                                 key=lambda p: p.stat().st_mtime,
                                 reverse=True
                             )[:10]
-                    except Exception:
+                    except OSError as e:
+                        logger.warning(f"Failed to list backups: {e}")
                         backups = []
 
                     if backups:
@@ -1014,8 +1018,8 @@ class Dashboard():
                                     was_running = pb.is_running()
                                     if was_running:
                                         pb.stop()
-                                except Exception:
-                                    pass
+                                except Exception as e:
+                                    logger.warning(f"Failed to stop PBData before restore: {e}")
                                 ok = self.db.restore_db_from(selected_path)
                                 if ok:
                                     st.session_state['db_last_backup'] = selected_path
@@ -1024,8 +1028,8 @@ class Dashboard():
                                     try:
                                         if was_running:
                                             pb.run()
-                                    except Exception:
-                                        pass
+                                    except Exception as e:
+                                        logger.warning(f"Failed to restart PBData after restore: {e}")
                                     st.rerun()
             else:
                 income = df[['Date', 'Symbol', 'Income', 'User']].copy()
@@ -1056,8 +1060,8 @@ class Dashboard():
                     was_running = pb.is_running()
                     if was_running:
                         pb.stop()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Failed to stop PBData before delete: {e}")
                 # Full DB backup then delete
                 backup_path = self.db.backup_full_db()
                 if backup_path:
@@ -1068,8 +1072,8 @@ class Dashboard():
                 try:
                     if was_running:
                         pb.run()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Failed to restart PBData after delete: {e}")
                 # close dialog and refresh
                 st.session_state[f'income_delete_selected_open_{position}'] = False
                 st.session_state.pop(f'income_delete_selected_ids_{position}', None)
@@ -1099,8 +1103,8 @@ class Dashboard():
                     was_running = pb.is_running()
                     if was_running:
                         pb.stop()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Failed to stop PBData before delete: {e}")
                 backup_path = self.db.backup_full_db()
                 if backup_path:
                     st.session_state['db_last_backup'] = backup_path
@@ -1110,8 +1114,8 @@ class Dashboard():
                 try:
                     if was_running:
                         pb.run()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning(f"Failed to restart PBData after delete: {e}")
                 st.session_state[f'income_delete_older_open_{position}'] = False
                 st.session_state.pop(f'income_delete_older_users_{position}', None)
                 st.session_state.pop(f'income_delete_older_cutoff_{position}', None)

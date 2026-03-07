@@ -424,9 +424,11 @@ class VPS:
                 allow_agent=False,        # skip SSH agent
             )
 
-            # Non-interactive sudo (prevents hanging)
-            command = f"echo {shlex.quote(self.user_pw)} | sudo -S ufw status"
+            # Non-interactive sudo — pass password via stdin to avoid exposure in process list
+            command = "sudo -S ufw status"
             stdin, stdout, stderr = ssh.exec_command(command, timeout=timeout)
+            stdin.write(self.user_pw + '\n')
+            stdin.flush()
 
             output = stdout.read().decode(errors="ignore")
             errors = stderr.read().decode(errors="ignore")

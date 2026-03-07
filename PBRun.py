@@ -287,7 +287,7 @@ class DynamicIgnore():
     
     def save(self):
         file = Path(f'{self.path}/ignored_coins.json')
-        ignored_coins = self.ignored_coins
+        ignored_coins = self.ignored_coins.copy()
         if self.ignored_coins_long:
             for symbol in self.ignored_coins_long:
                 if symbol not in ignored_coins:
@@ -305,7 +305,7 @@ class DynamicIgnore():
         with open(file, "w", encoding='utf-8') as f:
             json.dump(ignored_coins, f)
         file = Path(f'{self.path}/approved_coins.json')
-        approved_coins = self.approved_coins
+        approved_coins = self.approved_coins.copy()
         if self.approved_coins_long:
             for symbol in self.approved_coins_long:
                 if symbol not in approved_coins:
@@ -413,45 +413,46 @@ class RunSingle():
         with open(version_file, "w", encoding='utf-8') as f:
             f.write(version)
         # Generate parameters
-        self.parameters = ""
+        params = []
         if "_long_mode" in self._single_config:
             if self._single_config["_long_mode"] == "graceful_stop":
-                self.parameters = (self.parameters + f' -lm gs').lstrip(' ')
+                params.append('-lm gs')
             if self._single_config["_long_mode"] == "panic":
-                self.parameters = (self.parameters + f' -lm p').lstrip(' ')
+                params.append('-lm p')
             if self._single_config["_long_mode"] == "tp_only":
-                self.parameters = (self.parameters + f' -lm t').lstrip(' ')
+                params.append('-lm t')
         if "_short_mode" in self._single_config:
             if self._single_config["_short_mode"] == "graceful_stop":
-                self.parameters = (self.parameters + f' -sm gs').lstrip(' ')
+                params.append('-sm gs')
             if self._single_config["_short_mode"] == "panic":
-                self.parameters = (self.parameters + f' -sm p').lstrip(' ')
+                params.append('-sm p')
             if self._single_config["_short_mode"] == "tp_only":
-                self.parameters = (self.parameters + f' -sm t').lstrip(' ')
+                params.append('-sm t')
         if "_market_type" in self._single_config:
             if self._single_config["_market_type"] != "swap":
-                self.parameters = (self.parameters + f' -m spot').lstrip(' ')
+                params.append('-m spot')
         if "_ohlcv" in self._single_config:
             if not self._single_config["_ohlcv"]:
-                self.parameters = (self.parameters + f' -oh n').lstrip(' ')
+                params.append('-oh n')
         if "_co" in self._single_config:
             if self._single_config["_co"] != -1:
-                self.parameters = (self.parameters + f' -co {self._single_config["_co"]}').lstrip(' ')
+                params.append(f'-co {self._single_config["_co"]}')
         if "_leverage" in self._single_config:
             if self._single_config["_leverage"] != 7:
-                self.parameters = (self.parameters + f' -lev {self._single_config["_leverage"]}').lstrip(' ')
+                params.append(f'-lev {self._single_config["_leverage"]}')
         if "_assigned_balance" in self._single_config:
             if self._single_config["_assigned_balance"] != 0:
-                self.parameters = (self.parameters + f' -ab {self._single_config["_assigned_balance"]}').lstrip(' ')
+                params.append(f'-ab {self._single_config["_assigned_balance"]}')
         if "_price_distance_threshold" in self._single_config:
             if self._single_config["_price_distance_threshold"] != 0.5:
-                self.parameters = (self.parameters + f' -pt {self._single_config["_price_distance_threshold"]}').lstrip(' ')
+                params.append(f'-pt {self._single_config["_price_distance_threshold"]}')
         if "_price_precision" in self._single_config:
             if self._single_config["_price_precision"] != 0.0:
-                self.parameters = (self.parameters + f' -pp {self._single_config["_price_precision"]}').lstrip(' ')
+                params.append(f'-pp {self._single_config["_price_precision"]}')
         if "_price_step" in self._single_config:
             if self._single_config["_price_step"] != 0.0:
-                self.parameters = (self.parameters + f' -ps {self._single_config["_price_step"]}').lstrip(' ')
+                params.append(f'-ps {self._single_config["_price_step"]}')
+        self.parameters = ' '.join(params)
 
     def load(self):
         file = Path(f'{self.path}/instance.cfg')
@@ -491,6 +492,7 @@ class RunSingle():
             except Exception as e:
                 print(f'Something went wrong, but continue {e}')
                 traceback.print_exc()
+                return False
 
 class RunMulti():
     def __init__(self):
@@ -638,6 +640,7 @@ class RunMulti():
             except Exception as e:
                 print(f'Something went wrong, but continue {e}')
                 traceback.print_exc()
+                return False
 
 class RunV7():
     def __init__(self):
@@ -806,6 +809,7 @@ class RunV7():
                 print(f'Setting version of {self.user} to 0')
                 self.version = 0
                 traceback.print_exc()
+                return False
 
 class PBRun():
     """PBRun links together PBRemote, PBGui and Passivbot, while being independant and can maintain passivbot working by itself.

@@ -34,10 +34,10 @@ class Database():
                     for old in backups[keep_last:]:
                         try:
                             old.unlink()
-                        except Exception:
-                            pass
-            except Exception:
-                pass
+                        except OSError as e:
+                            logger.warning(f"Failed to clean old backup {old}: {e}")
+            except OSError as e:
+                logger.warning(f"Failed to list backups for rotation: {e}")
             return str(backup_path)
         except Exception as e:
             logger.error(f"Database error: {e}")
@@ -218,12 +218,8 @@ class Database():
             stable_coin = position[1][-4:]
             orders = exchange.fetch_all_open_orders(position[1][0:-4] + f"/{stable_coin}:{stable_coin}")
             all_orders.extend(orders)
-        ids_db = []
-        for order in orders_db:
-            ids_db.append(order[6])
-        ids = []
-        for order in all_orders:
-            ids.append(order['id'])
+        ids_db = {order[6] for order in orders_db}
+        ids = {order['id'] for order in all_orders}
         try:
             with sqlite3.connect(self.db) as conn:
                 # Remove orders that are not in the exchange
@@ -255,9 +251,7 @@ class Database():
     def update_prices(self, user: User):
         positions_db = self.fetch_positions(user)
         prices_db = self.fetch_prices(user)
-        symbols_db = []
-        for price in prices_db:
-            symbols_db.append(price[1])
+        symbols_db = {price[1] for price in prices_db}
         exchange = Exchange(user.exchange, user)
         symbols = []
         prices = {}
@@ -332,20 +326,19 @@ class Database():
         try:
             cur = conn.cursor()
             cur.execute(sql, history)
-            conn.commit()
         except sqlite3.Error as e:
-            print(e, history)
+            logger.error(f"Failed to add history: {e}. Data: {history}")
     
     def add_position(self, conn: sqlite3.Connection, position: list):
         sql = '''INSERT INTO position(timestamp,psize,upnl,entry,symbol,user,side)
                 VALUES(?,?,?,?,?,?,?) '''
+        cur = None
         try:
             cur = conn.cursor()
             cur.execute(sql, position)
-            conn.commit()
         except sqlite3.Error as e:
-            print(e, position)
-        return cur.lastrowid
+            logger.error(f"Failed to add position: {e}. Data: {position}")
+        return cur.lastrowid if cur else None
 
     def add_order(self, conn: sqlite3.Connection, order: list):
         sql = '''INSERT INTO orders(timestamp,amount,price,side,uniqueid,symbol,user)
@@ -353,9 +346,8 @@ class Database():
         try:
             cur = conn.cursor()
             cur.execute(sql, order)
-            conn.commit()
         except sqlite3.Error as e:
-            print(e, order)
+            logger.error(f"Failed to add order: {e}. Data: {order}")
 
     def add_price(self, conn: sqlite3.Connection, price: list):
         sql = '''INSERT INTO prices(timestamp,price,symbol,user)
@@ -363,25 +355,22 @@ class Database():
         try:
             cur = conn.cursor()
             cur.execute(sql, price)
-            conn.commit()
         except sqlite3.Error as e:
-            print(e, price)
+            logger.error(f"Failed to add price: {e}. Data: {price}")
 
     def remove_position(self, conn: sqlite3.Connection, id: int):
         sql = '''DELETE FROM position WHERE id = ? '''
         try:
             cur = conn.cursor()
             cur.execute(sql, [id])
-            conn.commit()
         except sqlite3.Error as e:
             logger.error(f"Database error: {e}")
-    
+
     def remove_order(self, conn: sqlite3.Connection, id: int):
         sql = '''DELETE FROM orders WHERE id = ? '''
         try:
             cur = conn.cursor()
             cur.execute(sql, [id])
-            conn.commit()
         except sqlite3.Error as e:
             logger.error(f"Database error: {e}")
 
@@ -390,7 +379,6 @@ class Database():
         try:
             cur = conn.cursor()
             cur.execute(sql, [symbol, user])
-            conn.commit()
         except sqlite3.Error as e:
             logger.error(f"Database error: {e}")
 
@@ -404,9 +392,8 @@ class Database():
         try:
             cur = conn.cursor()
             cur.execute(sql, position)
-            conn.commit()
         except sqlite3.Error as e:
-            print(e, position)
+            logger.error(f"Failed to update position: {e}. Data: {position}")
 
     def update_order(self, conn: sqlite3.Connection, order: list):
         sql = '''UPDATE orders
@@ -418,9 +405,8 @@ class Database():
         try:
             cur = conn.cursor()
             cur.execute(sql, order)
-            conn.commit()
         except sqlite3.Error as e:
-            print(e, order)
+            logger.error(f"Failed to update order: {e}. Data: {order}")
 
     def update_price(self, conn: sqlite3.Connection, price: list):
         sql = '''UPDATE prices
@@ -430,9 +416,8 @@ class Database():
         try:
             cur = conn.cursor()
             cur.execute(sql, price)
-            conn.commit()
         except sqlite3.Error as e:
-            print(e, price)
+            logger.error(f"Failed to update price: {e}. Data: {price}")
 
     def update_balance(self, conn: sqlite3.Connection, balance: list):
         sql = '''INSERT OR REPLACE INTO balances(timestamp,balance,user)
@@ -440,9 +425,8 @@ class Database():
         try:
             cur = conn.cursor()
             cur.execute(sql, balance)
-            conn.commit()
         except sqlite3.Error as e:
-            print(e, balance)
+            logger.error(f"Failed to update balance: {e}. Data: {balance}")
 
     def fetch_history(self, user: User):
         exchange = Exchange(user.exchange, user)

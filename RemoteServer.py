@@ -304,7 +304,7 @@ class RemoteServer():
         Checks if the api-keys.json from pbgui (self._path) is different from api-keys.json from passivbot.
         If different, It creates a backup of the passivbot api-keys.json to pbgui/data/backup, and then copy the new api-keys.json file to the passivbot directory.
         """
-        if self.calculate_md5(api_file) != self.calculate_md5(api_keys):
+        if self.calculate_hash(api_file) != self.calculate_hash(api_keys):
             print(f'{datetime.now().isoformat(sep=" ", timespec="seconds")} Install new API Keys from: {self.name} to {api_keys}')
             # Backup api-keys
             date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -320,12 +320,12 @@ class RemoteServer():
             # Copy new api-keys
             shutil.copy(api_file, api_keys)
 
-    def calculate_md5(self, file: Path):
-        """Checks if the two API files have the same hash using md5 protocol."""
+    def calculate_hash(self, file: Path):
+        """Checks if the two API files have the same hash using SHA-256."""
         if file.exists():
             with open(file, 'rb') as file_obj:
                 file_contents = file_obj.read()
-            return hashlib.md5(file_contents).hexdigest()
+            return hashlib.sha256(file_contents).hexdigest()
         return None
 
     def delete_server(self):
